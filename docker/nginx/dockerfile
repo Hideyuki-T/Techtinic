@@ -1,0 +1,10 @@
+FROM nginx:1.18-alpine
+
+# タイムゾーン設定（必要なら）
+ENV TZ=Asia/Tokyo
+
+# nginxの設定ファイルをコピー（コンテナ内の設定ディレクトリに配置）
+COPY ./docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+
+# 作業ディレクトリを指定
+WORKDIR /var/www/html

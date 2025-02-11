@@ -1,0 +1,49 @@
+services:
+  # PHP (Laravel) サービス
+  app:
+    container_name: techtinic-app   # 既存と重複しないユニークなコンテナ名
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    volumes:
+      - ./src:/var/www/html          # Laravelプロジェクトのソースコード
+      - ./.ssh:/root/.ssh            # SSH設定（必要な場合）
+      - ./docs:/var/www/html/docs    # ドキュメント用ディレクトリ
+    environment:
+      - DB_CONNECTION=pgsql
+      - DB_HOST=techtinic-db         # db サービス名に合わせる
+      - DB_PORT=5432
+      - DB_DATABASE=techtinic_db
+      - DB_USERNAME=techtinic_user
+      - DB_PASSWORD=secret
+    depends_on:
+      - db
+
+  # nginx サービス
+  web:
+    container_name: techtinic-nginx  # ユニークなコンテナ名
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+    ports:
+      - "8080:80"                    # ホスト側 8080 を使用（既存の 80 と競合しないように）
+    volumes:
+      - ./src:/var/www/html
+    depends_on:
+      - app
+
+  # PostgreSQL サービス
+  db:
+    container_name: techtinic-db     # ユニークなコンテナ名
+    image: postgres:13
+    environment:
+      POSTGRES_USER: techtinic_user
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: techtinic_db
+    ports:
+      - "5433:5432"                  # ホスト側 5433 を使用（既存のMySQLや他のDBと競合しないように）
+    volumes:
+      - techtinic-db-volume:/var/lib/postgresql/data
+
+volumes:
+  techtinic-db-volume:

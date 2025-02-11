@@ -10,12 +10,12 @@ services:
       - ./.ssh:/root/.ssh            # SSH設定（必要な場合）
       - ./docs:/var/www/html/docs    # ドキュメント用ディレクトリ
     environment:
-      - DB_CONNECTION=pgsql
-      - DB_HOST=techtinic-db         # db サービス名に合わせる
-      - DB_PORT=5432
-      - DB_DATABASE=techtinic_db
-      - DB_USERNAME=techtinic_user
-      - DB_PASSWORD=secret
+    - DB_CONNECTION=pgsql
+    - DB_HOST=techtinic-db
+    - DB_PORT=5432
+    - DB_DATABASE=techtinic_db
+    - DB_USERNAME=hideyuki
+    - DB_PASSWORD=12345
     depends_on:
       - db
 
@@ -37,8 +37,8 @@ services:
     container_name: techtinic-db     # ユニークなコンテナ名
     image: postgres:13
     environment:
-      POSTGRES_USER: techtinic_user
-      POSTGRES_PASSWORD: secret
+      POSTGRES_USER: hideyuki
+      POSTGRES_PASSWORD: 12345
       POSTGRES_DB: techtinic_db
     ports:
       - "5433:5432"                  # ホスト側 5433 を使用（既存のMySQLや他のDBと競合しないように）

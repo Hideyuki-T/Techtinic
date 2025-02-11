@@ -15,12 +15,16 @@ class AIEngine
     public function getResponse(string $input): string
     {
         // シンプルなキーワードマッチングの例
-        $knowledge = Knowledge::where('content', 'LIKE', "%{$input}%")->first();
+        $knowledge = Knowledge::where('title', 'LIKE', "%{$input}%")
+            ->orWhere('content', 'LIKE', "%{$input}%")
+            ->first();
 
         if ($knowledge) {
             return $knowledge->content;
-        } else {
-            return "申し訳ありません、その知識はまだ教えられていません。";
+
         }
+
+            return "それが何かはまだ知らないや。ごめん。。";
+
     }
 }

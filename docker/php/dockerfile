@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     zip \
     unzip \
     vim \
+    zsh \
     libpq-dev \
   && docker-php-ext-install pdo_pgsql bcmath \
   && apt-get clean \
@@ -29,6 +30,17 @@ COPY ./docker/php/php.ini /usr/local/etc/php/php.ini
 RUN git config --global user.name "YourGitHubUserName" \
     && git config --global user.email "your.email@example.com" \
     && git config --global --add safe.directory /var/www/html
+
+# ~/.zshrc を作成し、エイリアスを設定
+RUN touch /root/.zshrc \
+    && echo "alias ll='ls -alF'" >> /root/.bashrc \
+    && echo "alias gs='git status'" >> /root/.bashrc \
+    && echo "alias gp='git pull'" >> /root/.bashrc \
+    && echo "alias Tt='php artisan knowledge:teach'" >> /root/.bashrc \
+    && echo "alias Tr='php artisan chat:run'" >> /root/.bashrc
+
+# `zsh` をデフォルトシェルに設定
+RUN chsh -s $(which zsh)
 
 # コンテナ起動時の作業ディレクトリを指定
 WORKDIR /var/www/html

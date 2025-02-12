@@ -71,12 +71,14 @@ class KnowledgeTeachCommand extends Command
         if (empty(trim($tagInput))) {
             $tagInput = $category->name;
         }
-        $tagNames = array_map('trim', explode(',', $tagInput));
+        // タグを小文字に統一して配列に変換
+        $tagNames = array_map(function($tagName) {
+            return strtolower(trim($tagName));
+        }, explode(',', $tagInput));
+
         foreach ($tagNames as $tagName) {
             if (!empty($tagName)) {
-                // 既存のタグを検索、なければ新規作成
                 $tag = Tag::firstOrCreate(['name' => $tagName]);
-                // タグと知識の関連付け
                 $knowledge->tags()->attach($tag->id);
             }
         }

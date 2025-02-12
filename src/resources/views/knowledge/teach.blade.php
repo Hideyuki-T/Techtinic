@@ -23,7 +23,7 @@
     </div>
 @endif
 
-<form action="/knowledge/teach" method="POST">
+<form action="/teach" method="POST">
     @csrf
     <div class="form-group">
         <label for="category">カテゴリー</label>

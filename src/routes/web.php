@@ -1,6 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\KnowledgeController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -13,6 +16,18 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
+// ルートページ
+Route::get('/', fn() => view('welcome'));
+
+// チャット関連ルートグループ（例: http://localhost:8080/chat）
+Route::prefix('chat')->group(function () {
+    // チャット画面の表示（resources/views/techtinic/chat.blade.php）
+    Route::get('/', fn() => view('techtinic.chat'));
+    // チャットの API エンドポイント
+    Route::post('/', [ChatController::class, 'chat']);
 });
+
+// 知識登録画面および処理（例: http://localhost:8080/teach）
+// GET でフォーム表示、POST で登録処理を行う
+Route::get('/teach', [KnowledgeController::class, 'create']);
+Route::post('/teach', [KnowledgeController::class, 'store']);

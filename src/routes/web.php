@@ -14,17 +14,17 @@ use App\Http\Controllers\ChatController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+//http://localhost::8080/chat
 
-Route::get('/', function () {
-    return view('welcome');
+//ルートページ
+Route::get('/', fn() => view('welcome'));
+
+//チャット関連ルートグループ
+Route::prefix('chat')->group(function (){
+    //チャット画面の表示
+    Route::get('/', fn() => view('techtinic.chat'));
+    //チャットのAPIエンドポイント
+    Route::post('/', [ChatController::class, 'chat']);
 });
-
-Route::get('/chat', function(){
-    return view('techtinic.chat');
-});
-Route::post('/chat', [ChatController::class, 'chat']);
-
-Route::get('/teach', function (){
-    return view('knowledge.teach');
-});
-
+//知識登録画面
+Route::view('/teach', 'knowledge.teach');

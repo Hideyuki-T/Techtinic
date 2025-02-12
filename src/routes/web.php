@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ChatController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -16,3 +18,13 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/chat', function(){
+    return view('techtinic.chat');
+});
+Route::post('/chat', [ChatController::class, 'chat']);
+
+Route::get('/teach', function (){
+    return view('knowledge.teach');
+});
+

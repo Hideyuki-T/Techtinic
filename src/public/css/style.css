@@ -1,0 +1,91 @@
+/* 共通のスタイル */
+body {
+    font-family: sans-serif;
+    margin: 20px;
+}
+
+h1 {
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+input[type="text"],
+textarea {
+    width: 100%;
+    padding: 8px;
+    box-sizing: border-box;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+.alert {
+    padding: 10px;
+    background-color: #dff0d8;
+    color: #3c763d;
+    margin-bottom: 20px;
+}
+
+/* チャット用スタイル */
+#chat-box {
+    border: 1px solid #ccc;
+    padding: 10px;
+    height: 300px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.message {
+    margin: 5px 0;
+}
+
+.message strong {
+    margin-right: 5px;
+}
+
+/* 選択肢表示用エリア */
+#selection-box {
+    margin: 10px 0;
+    padding: 10px;
+    border: 1px solid #aaa;
+    background-color: #f0f0f0;
+    display: none;
+}
+
+.option-btn {
+    padding: 5px 10px;
+    margin: 3px;
+    border: 1px solid #ccc;
+    background-color: #eee;
+    cursor: pointer;
+}
+
+/* メディアクエリによるレスポンシブ調整 */
+/* スマホ（最大幅600px）向けのスタイル */
+@media (max-width: 600px) {
+    body {
+        margin: 10px;
+        font-size: 14px;
+    }
+    #chat-box {
+        height: 250px;
+        padding: 5px;
+    }
+    input[type="text"] {
+        width: 60%;
+    }
+    button {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+}

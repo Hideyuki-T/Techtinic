@@ -4,35 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Techtinic Chat</title>
-    <!-- axios をCDNから読み込む -->
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <style>
-        body { font-family: sans-serif; }
-        #chat-box {
-            border: 1px solid #ccc;
-            padding: 10px;
-            height: 300px;
-            overflow-y: auto;
-            margin-bottom: 10px;
-        }
-        .message { margin: 5px 0; }
-        .message strong { margin-right: 5px; }
-        /* 選択肢表示用エリア */
-        #selection-box {
-            margin: 10px 0;
-            padding: 10px;
-            border: 1px solid #aaa;
-            background-color: #f0f0f0;
-            display: none;
-        }
-        .option-btn {
-            padding: 5px 10px;
-            margin: 3px;
-            border: 1px solid #ccc;
-            background-color: #eee;
-            cursor: pointer;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- その他必要なスクリプト等 -->
+</head>
 </head>
 <body>
 <h1>Techtinic Chat</h1>

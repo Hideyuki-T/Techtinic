@@ -70,6 +70,21 @@ button {
     cursor: pointer;
 }
 
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+
 /* メディアクエリによるレスポンシブ調整 */
 /* スマホ（最大幅600px）向けのスタイル */
 @media (max-width: 600px) {

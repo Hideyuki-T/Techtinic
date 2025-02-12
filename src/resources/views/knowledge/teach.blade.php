@@ -7,7 +7,10 @@
     <link rel="stylesheet" href="/css/style.css">
     <!-- その他必要なスクリプト等 -->
 </head>
-<body>
+<div style="margin-bottom: 10px;">
+    <a href="/chat" class="btn">チャット画面に戻る</a>
+</div>
+
 <h1>Techtinic に知識を教える</h1>
 
 @if(session('success'))

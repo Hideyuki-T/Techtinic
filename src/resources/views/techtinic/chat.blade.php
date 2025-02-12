@@ -7,8 +7,11 @@
     <link rel="stylesheet" href="/css/style.css">
     <!-- その他必要なスクリプト等 -->
 </head>
-</head>
 <body>
+<!-- 例: チャット画面の上部にボタンを追加 -->
+<div style="margin-bottom: 10px;">
+    <a href="/teach" class="btn">知識登録画面へ</a>
+</div>
 <h1>Techtinic Chat</h1>
 <div id="chat-box">
     <!-- チャット履歴がここに表示される -->

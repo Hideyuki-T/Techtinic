@@ -8,6 +8,7 @@
     <!-- axiosライブラリの読み込み -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <!-- その他必要なスクリプト等 -->
+    <link rel="manifest" href="/manifest.json">
 </head>
 <body>
 <!-- 例: チャット画面の上部にボタンを追加 -->
@@ -106,6 +107,17 @@
 
         // 現在のステージを維持して選択肢の内容を送信（サーバー側で stage によって処理が分岐する）
         sendToAPI(option, currentStage);
+    }
+</script>
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(function(registration) {
+                console.log('Service Worker registered with scope:', registration.scope);
+            })
+            .catch(function(error) {
+                console.error('Service Worker registration failed:', error);
+            });
     }
 </script>
 </body>

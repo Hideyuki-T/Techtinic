@@ -86,21 +86,31 @@ button {
 }
 
 /* メディアクエリによるレスポンシブ調整 */
-/* スマホ（最大幅600px）向けのスタイル */
-@media (max-width: 600px) {
+/* スマホ向けの調整（画面幅600px以下） */
+@media screen and (max-width: 600px) {
     body {
-        margin: 10px;
-        font-size: 14px;
+        padding: 10px;
     }
+
     #chat-box {
-        height: 250px;
-        padding: 5px;
-    }
-    input[type="text"] {
-        width: 60%;
-    }
-    button {
-        padding: 8px 16px;
+        height: 300px;
         font-size: 14px;
+    }
+
+    input#message {
+        width: 90%;
+        padding: 12px;
+        font-size: 18px;
+    }
+
+    button {
+        padding: 12px 25px;
+        font-size: 18px;
+    }
+
+    /* ボタンやリンクもタッチしやすいサイズにする */
+    .btn, .option-btn {
+        padding: 12px;
+        font-size: 18px;
     }
 }

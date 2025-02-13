@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Techtinic Chat</title>
     <link rel="stylesheet" href="/css/style.css">
+    <!-- axiosライブラリの読み込み -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <!-- その他必要なスクリプト等 -->
 </head>
 <body>

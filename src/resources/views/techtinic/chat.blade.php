@@ -120,5 +120,6 @@
             });
     }
 </script>
+<script src="/js/sync.js"></script>
 </body>
 </html>

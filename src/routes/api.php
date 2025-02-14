@@ -3,6 +3,8 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatController;
+use App\Models\Knowledge;
+
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -19,3 +21,16 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('/chat', [ChatController::class, 'chat']);
+
+// データベースから知識データを取得するルート
+Route::get('/api/sync', function () {
+    // Knowledgeのカテゴリーやタグも同時にロードする場合：
+    $knowledgeData = Knowledge::with(['categories', 'tags'])->get();
+    return response()->json(['knowledge' => $knowledgeData]);
+});
+
+// /sync ルートも必要なら、同様に設定
+Route::get('/sync', function () {
+    $knowledgeData = Knowledge::with(['categories', 'tags'])->get();
+    return response()->json(['knowledge' => $knowledgeData]);
+});

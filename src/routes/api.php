@@ -34,3 +34,10 @@ Route::get('/sync', function () {
     $knowledgeData = Knowledge::with(['categories', 'tags'])->get();
     return response()->json(['knowledge' => $knowledgeData]);
 });
+
+//API で環境変数を取得するエンドポイント
+Route::get('/config', function () {
+    return response()->json([
+        'sync_server_ip' => config('app.sync_server_ip'),
+    ]);
+});

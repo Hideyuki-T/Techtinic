@@ -85,6 +85,13 @@ button {
     background-color: #0056b3;
 }
 
+.knowledge-item {
+    padding: 8px;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 4px;
+}
+
+
 /* メディアクエリによるレスポンシブ調整 */
 /* スマホ向けの調整（画面幅600px以下） */
 @media screen and (max-width: 600px) {

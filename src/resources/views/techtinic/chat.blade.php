@@ -15,9 +15,14 @@
     </script>
 </head>
 <body>
-<!-- 上部のリンクなど -->
+<!-- オフライン通知バナー -->
+<div id="offline-banner" style="display: none; background: #ffcccc; color: #333; padding: 10px; text-align: center;">
+    現在、オフライン状態です。最新のデータは取得できません。
+</div>
+
+<!-- 上部のリンク -->
 <div style="margin-bottom: 10px;">
-    <a href="/teach" class="btn">知識登録画面へ</a>
+    <a href="/teach" class="btn">Knowledge Registration</a>
 </div>
 <h1>Techtinic Chat</h1>
 <div id="chat-box">
@@ -29,11 +34,14 @@
 
 <!-- キャッシュされた知識一覧ページへのリンク -->
 <p style="margin-top:20px;">
-    <a href="/knowledge" class="btn">キャッシュされた知識を見る</a>
+    <a href="/knowledge" class="btn">IndexedDB</a>
 </p>
 
 <!-- チャット機能のスクリプト -->
 <script>
+    // axios にタイムアウト(例: 5秒)を設定
+    axios.defaults.timeout = 5000;
+
     var currentStage = "default";
 
     function sendMessage() {
@@ -91,9 +99,11 @@
         sendToAPI(option, currentStage);
     }
 </script>
+
+<!-- Service Worker をモジュールとして登録 -->
 <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service-worker.js')
+        navigator.serviceWorker.register('/service-worker.js', { type: 'module' })
             .then(function(registration) {
                 console.log('Service Worker registered with scope:', registration.scope);
             })
@@ -102,6 +112,8 @@
             });
     }
 </script>
-<script src="/js/sync.js"></script>
+
+<!-- main.js を読み込む (オフライン通知などの処理を含む) -->
+<script src="/js/main.js"></script>
 </body>
 </html>

@@ -1,10 +1,21 @@
 console.log("sync.js loaded");
 console.log("window.idb:", window.idb);
 
+// タイムアウト用のヘルパー関数（例: 5秒）
+function fetchWithTimeout(resource, options = {}) {
+    const { timeout = 5000 } = options;
+    return Promise.race([
+        fetch(resource, options),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('タイムアウト')), timeout)
+        )
+    ]);
+}
+
 // IP アドレス取得用の関数（Laravel の /api/config から取得）
 async function getSyncServerIP() {
     try {
-        let response = await fetch("/api/config");
+        let response = await fetchWithTimeout("/api/config", { timeout: 5000 });
         let data = await response.json();
         return data.sync_server_ip;
     } catch (error) {
@@ -13,18 +24,27 @@ async function getSyncServerIP() {
     }
 }
 
-// ページ読み込み時に同期を実行し、IndexedDB のデータも UI に表示する
+// DOMContentLoaded 時にオンラインなら同期処理、オフラインならスキップ
 document.addEventListener("DOMContentLoaded", async () => {
-    await syncDataFromPC();
+    if (navigator.onLine) {
+        console.log("Online: 同期処理を開始します。");
+        await syncDataFromPC();
+    } else {
+        console.log("Offline: 同期処理はスキップします。");
+    }
     await displayKnowledgeData();
 });
 
-// PC側のデータ同期関数
 async function syncDataFromPC() {
     const ip = await getSyncServerIP();
     console.log("取得したサーバーIP:", ip);
-    fetch(`http://${ip}:8080/api/sync`)
-        .then(response => response.json())
+    fetchWithTimeout(`http://${ip}:8080/api/sync`, { timeout: 5000 })
+        .then(response => {
+            // レスポンスが JSON 形式でない場合はエラーとして処理
+            return response.headers.get('Content-Type')?.includes('application/json')
+                ? response.json()
+                : Promise.reject(new Error("JSON 形式ではありません"));
+        })
         .then(data => {
             console.log("同期データ取得:", data);
             saveKnowledgeData(data);
@@ -32,7 +52,7 @@ async function syncDataFromPC() {
         .catch(error => console.error("同期失敗:", error));
 }
 
-// IndexedDBの初期化関数
+// IndexedDB の初期化関数
 async function initDB() {
     const db = await window.idb.openDB('techtinic-db', 1, {
         upgrade(db) {
@@ -65,22 +85,24 @@ async function getKnowledgeData() {
     return allItems;
 }
 
-// UIに IndexedDB のデータを反映する関数
+// UI に IndexedDB のデータを反映する関数
 async function displayKnowledgeData() {
     try {
         const data = await getKnowledgeData();
         const listDiv = document.getElementById('knowledge-list');
-        listDiv.innerHTML = '';
-        if (data.length === 0) {
-            listDiv.innerHTML = '<p>キャッシュされた知識はありません。</p>';
-            return;
+        if (listDiv) {
+            listDiv.innerHTML = '';
+            if (data.length === 0) {
+                listDiv.innerHTML = '<p>キャッシュされた知識はありません。</p>';
+                return;
+            }
+            data.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'knowledge-item';
+                itemDiv.innerHTML = `<strong>${item.title}</strong>: ${item.content}`;
+                listDiv.appendChild(itemDiv);
+            });
         }
-        data.forEach(item => {
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'knowledge-item';
-            itemDiv.innerHTML = `<strong>${item.title}</strong>: ${item.content}`;
-            listDiv.appendChild(itemDiv);
-        });
     } catch (error) {
         console.error("知識データの表示に失敗しました:", error);
     }

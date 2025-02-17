@@ -22,7 +22,19 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('Opened cache');
-                return cache.addAll(urlsToCache);
+                // 個別に fetch してキャッシュに保存（個別エラーはログ出力）
+                return Promise.all(
+                    urlsToCache.map(url => {
+                        return fetch(url).then(response => {
+                            if (!response.ok) {
+                                console.error(`Failed to fetch ${url}: ${response.statusText}`);
+                            }
+                            return cache.put(url, response);
+                        }).catch(error => {
+                            console.error(`Error caching ${url}:`, error);
+                        });
+                    })
+                );
             })
     );
 });
@@ -35,7 +47,6 @@ self.addEventListener('fetch', (event) => {
     if (url.pathname.startsWith('/api/chat')) {
         event.respondWith(
             (async function() {
-                // リクエストボディは一度だけ読み取り、文字列として保持する
                 let reqBodyText = "";
                 try {
                     reqBodyText = await event.request.clone().text();
@@ -67,7 +78,7 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-// オフライン時のチャット応答処理（リクエストボディの文字列を受け取る）
+// オフライン時のチャット応答処理
 async function handleOfflineChatWithBody(reqText) {
     console.log("handleOfflineChatWithBody: reqText =", reqText);
     try {
@@ -79,7 +90,6 @@ async function handleOfflineChatWithBody(reqText) {
             console.error("JSONパースエラー:", e);
         }
         const userInput = reqData.message || '';
-
         const db = await openDB('techtinic-db', 1);
         const tx = db.transaction('knowledge', 'readonly');
         const store = tx.objectStore('knowledge');

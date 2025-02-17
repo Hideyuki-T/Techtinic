@@ -1,9 +1,9 @@
 console.log("sync.js loaded");
 console.log("window.idb:", window.idb);
 
-// タイムアウト用のヘルパー関数（例: 5秒）
+// タイムアウト用のヘルパー関数（タイムアウトを10秒に延長）
 function fetchWithTimeout(resource, options = {}) {
-    const { timeout = 5000 } = options;
+    const { timeout = 10000 } = options;  // 10秒に設定
     return Promise.race([
         fetch(resource, options),
         new Promise((_, reject) =>
@@ -13,15 +13,18 @@ function fetchWithTimeout(resource, options = {}) {
 }
 
 // IP アドレス取得用の関数（Laravel の /api/config から取得）
+// APIから正しい値が得られない場合は、window.location.hostname を使用する
 async function getSyncServerIP() {
     try {
-        let response = await fetchWithTimeout("/api/config", { timeout: 5000 });
+        let response = await fetchWithTimeout("/api/config", { timeout: 10000 });
         let data = await response.json();
-        return data.sync_server_ip;
+        if (data.sync_server_ip && data.sync_server_ip !== "undefined") {
+            return data.sync_server_ip;
+        }
     } catch (error) {
         console.error("IPアドレス取得失敗:", error);
-        return "localhost";  // デフォルト値
     }
+    return window.location.hostname;
 }
 
 // DOMContentLoaded 時にオンラインなら同期処理、オフラインならスキップ
@@ -36,14 +39,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function syncDataFromPC() {
-    const ip = await getSyncServerIP();
-    console.log("取得したサーバーIP:", ip);
-    fetchWithTimeout(`http://${ip}:8080/api/sync`, { timeout: 5000 })
+    const hostname = window.location.hostname;
+    console.log("使用するホスト名:", hostname);
+    let syncUrl = `/api/sync`; // 常に相対パスを使用する
+    fetchWithTimeout(syncUrl, { timeout: 10000 })
         .then(response => {
-            // レスポンスが JSON 形式でない場合はエラーとして処理
-            return response.headers.get('Content-Type')?.includes('application/json')
-                ? response.json()
-                : Promise.reject(new Error("JSON 形式ではありません"));
+            if (!response.headers.get('Content-Type')?.includes('application/json')) {
+                return Promise.reject(new Error("JSON 形式ではありません"));
+            }
+            return response.json();
         })
         .then(data => {
             console.log("同期データ取得:", data);
@@ -51,6 +55,7 @@ async function syncDataFromPC() {
         })
         .catch(error => console.error("同期失敗:", error));
 }
+
 
 // IndexedDB の初期化関数
 async function initDB() {

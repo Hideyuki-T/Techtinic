@@ -41,7 +41,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function syncDataFromPC() {
     const hostname = window.location.hostname;
     console.log("使用するホスト名:", hostname);
-    let syncUrl = `/api/sync`; // 常に相対パスを使用する
+    // 絶対URLを組み立てる（ポート番号が必要な場合は適宜調整）
+    let syncUrl = `http://${hostname}:8080/api/sync`;
     fetchWithTimeout(syncUrl, { timeout: 10000 })
         .then(response => {
             if (!response.headers.get('Content-Type')?.includes('application/json')) {
@@ -55,6 +56,7 @@ async function syncDataFromPC() {
         })
         .catch(error => console.error("同期失敗:", error));
 }
+
 
 
 // IndexedDB の初期化関数

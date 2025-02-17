@@ -33,6 +33,6 @@ Route::get('/sync', function () {
 // API で環境変数を取得するエンドポイント
 Route::get('/config', function () {
     return response()->json([
-        'sync_server_ip' => config('app.sync_server_ip'),
+        'sync_server_ip' => env('SYNC_SERVER_IP', 'localhost'),
     ]);
 });

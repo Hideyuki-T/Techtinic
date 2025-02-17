@@ -61,12 +61,12 @@ class ChatService
                 $categories = Category::all();
                 if ($categories->isEmpty()) {
                     return [
-                        'response' => "現在、何も教えてないみたいだね。これから沢山教えてね！",
+                        'response' => "今はまだ何も知らないんだ。。。これから沢山教えてね！",
                         'mode' => 'default'
                     ];
                 }
                 return [
-                    'response' => "タグはまだ登録されていないみたいです。代わりに、以下のカテゴリーが登録されています:",
+                    'response' => "タグはまだ登録されていないみたいだよ。代わりに、以下のカテゴリーが登録されてるよ。:",
                     'mode' => 'category_selection',
                     'options' => $categories->pluck('name')->toArray()
                 ];
@@ -84,7 +84,7 @@ class ChatService
             $knowledgeItems = $selectedTag->knowledges()->get();
             if ($knowledgeItems->isEmpty()) {
                 return [
-                    'response' => "そのタグに関連する知識は見つかりませんでした。",
+                    'response' => "そのタグに関連することは知らないなぁ。。。",
                     'mode' => 'default'
                 ];
             }
@@ -99,7 +99,7 @@ class ChatService
         $knowledge = Knowledge::where('title', $input)->first();
         if ($knowledge) {
             return [
-                'response' => "選択された知識「{$knowledge->title}」の内容は以下です:\n" . $knowledge->content,
+                'response' => "確か...「{$knowledge->title}」の内容はこうだったよ！\n" . $knowledge->content,
                 'mode' => 'default'
             ];
         }

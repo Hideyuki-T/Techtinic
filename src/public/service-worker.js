@@ -66,14 +66,14 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // その他のリクエストはキャッシュまたはネットワークから取得
+// その他のリクエストはキャッシュまたはネットワークから取得
     event.respondWith(
         caches.match(event.request)
             .then((response) => response || fetch(event.request))
             .catch((error) => {
                 console.error('キャッシュ/ネットワーク取得エラー:', error);
-                // フォールバックとして offline.html を返す
-                return caches.match('/offline.html');
+                // オフラインでエラーが発生しても、フォールバックしない（または適宜空のResponseを返す）
+                return new Response(null, { status: 503, statusText: 'Service Unavailable' });
             })
     );
 });
@@ -95,22 +95,32 @@ async function handleOfflineChatWithBody(reqText) {
         const store = tx.objectStore('knowledge');
         const allRecords = await store.getAll();
 
-        // シンプルな検索例: タイトルが完全一致、またはコンテンツに含まれる
-        const matched = allRecords.find(item =>
-            item.title === userInput || item.content.includes(userInput)
+        // 複数の候補をフィルタリング（タイトルまたは本文にユーザー入力が含まれているもの）
+        const matched = allRecords.filter(item =>
+            item.title.toLowerCase().includes(userInput.toLowerCase()) ||
+            item.content.toLowerCase().includes(userInput.toLowerCase())
         );
 
         let responseData;
-        if (matched) {
+        if (matched.length === 0) {
             responseData = {
-                response: `選択された知識「${matched.title}」の内容は以下です:\n${matched.content}`,
+                response: "それについてはまだ知らないや。",
+                mode: 'default',
+                offline: true
+            };
+        } else if (matched.length === 1) {
+            // 候補が1件だけなら、そのまま返す
+            responseData = {
+                response: `確か...「${matched[0].title}」の内容はこうだったよ!\n${matched[0].content}`,
                 mode: 'default',
                 offline: true
             };
         } else {
+            // 候補が複数ある場合は選択肢として返す
             responseData = {
-                response: "申し訳ありません、その知識はまだ教えられていません。",
-                mode: 'default',
+                response: "以下の情報が見つかったよ。どれか選んで！",
+                mode: 'selection',
+                options: matched.map(item => item.title),
                 offline: true
             };
         }

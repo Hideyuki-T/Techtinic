@@ -3,7 +3,7 @@
 # Docker コンテナ名（テストを実行するコンテナ）
 CONTAINER="techtinic-app"
 
-# スピナー関数: コマンド実行中に回転アニメーションを表示する
+# スピナー関数: コマンド実行中にシンプルな進捗表示を行う
 run_command_with_spinner() {
     local cmd="$1"
     local output_file=$(mktemp)
@@ -13,7 +13,7 @@ run_command_with_spinner() {
     local i=0
     while kill -0 $pid 2>/dev/null; do
         i=$(( (i+1) % 4 ))
-        printf "\rテスト実行中... ${spin:$i:1}"
+        printf "\r%s" "${spin:$i:1}"
         sleep 0.1
     done
     wait $pid
@@ -29,26 +29,26 @@ while true; do
     echo "   - HTTPS通信でホームページが正しくレスポンスを返すか検証"
     echo "2) [Feature] Docker Container Communication Test"
     echo "   - app、nginx、postgresqlの各コンテナ間で疎通ができるか検証"
-    echo "3) [Feature] Service Worker Registration Test"
-    echo "   - ブラウザがサービスワーカーを正しく登録しているか検証"
-    echo "4) [Feature] IndexedDB Synchronization Test"
-    echo "   - IndexedDBに同期済みデータが正しく保存され、オフラインで利用できるか検証"
-    echo "5) [Feature] Responsive Layout Test for Desktop"
-    echo "   - PCでの表示が期待通りのレイアウトかを検証"
-    echo "6) [Feature] Responsive Layout Test for Mobile"
-    echo "   - スマホでの表示が最適化され、UIが正しく機能するかを検証"
+    echo "3) [Feature] Service Worker Registration Test (Dusk)"
+    echo "   - サービスワーカーが正しく登録され、インジケータが表示されるか検証"
+    echo "4) [Feature] IndexedDB Synchronization Test (Dusk)"
+    echo "   - IndexedDB同期完了のインジケータが表示されるか検証"
+    echo "5) [Feature] Responsive Layout Test for Desktop (Dusk)"
+    echo "   - PCでのレイアウトが正しく表示されるか検証"
+    echo "6) [Feature] Responsive Layout Test for Mobile (Dusk)"
+    echo "   - モバイルでのレイアウトが正しく表示されるか検証"
     echo "7) [Feature] WebRoutesTest"
-    echo "   - ホーム、チャット、知識登録・一覧などのWebルートが正しく表示されるか検証"
+    echo "   - 各Webルートが正しく表示されるか検証"
     echo "8) [Feature] ChatControllerTest"
-    echo "   - /chatエンドポイントのPOSTリクエストに対して正しいJSONレスポンスが返るか検証"
+    echo "   - /chatエンドポイントのPOSTリクエストで正しいJSONが返るか検証"
     echo "9) [Unit] AIEngineTest"
-    echo "   - AIEngineが入力キーワードに基づき知識応答またはデフォルト応答を返すか検証"
+    echo "   - AIEngineのキーワード検索ロジックを検証"
     echo "10) [Unit] ChatServiceTest"
-    echo "    - チャットサービスの内部ロジック（例:'どんなことを知ってる？'の入力処理）が正しく動作するか検証"
+    echo "    - チャットサービスの内部ロジックが期待通りか検証"
     echo "11) [Feature] SyncApiTest"
-    echo "    - /api/syncおよび/api/configエンドポイントが正しいJSON構造と内容を返すか検証"
+    echo "    - APIエンドポイントが正しいJSONを返すか検証"
     echo "12) [Feature] ExampleTest"
-    echo "    - アプリケーションの基本動作（ルートへのアクセス等）が正常に行われるか検証"
+    echo "    - アプリケーションの基本動作を検証"
     echo "13) 全てのテストを実行"
     echo "q) 終了する"
     read -p "番号を入力: " choice
@@ -56,55 +56,59 @@ while true; do
     case $choice in
         1)
             DESCRIPTION="[Feature] HomePage HTTPS Response Test: HTTPS通信でホームページが正しくレスポンスを返すか検証します。"
+            # Feature テストは php artisan test を使用
             TEST_CMD="docker exec $CONTAINER php artisan test --filter=HomePageHttpsResponseTest"
             ;;
         2)
-            DESCRIPTION="[Feature] Docker Container Communication Test: app、nginx、postgresql間のネットワーク疎通ができるか検証します。"
+            DESCRIPTION="[Feature] Docker Container Communication Test: app、nginx、postgresql間の疎通ができるか検証します。"
             TEST_CMD="docker exec $CONTAINER php artisan test --filter=DockerContainerCommunicationTest"
             ;;
         3)
-            DESCRIPTION="[Feature] Service Worker Registration Test: ブラウザがサービスワーカーを正しく登録しているか検証します。"
-            TEST_CMD="docker exec $CONTAINER php artisan test --filter=ServiceWorkerRegistrationTest"
+            DESCRIPTION="[Feature] Service Worker Registration Test: サービスワーカーの登録状態を検証します。"
+            # Dusk テストは php artisan dusk を使用
+            TEST_CMD="docker exec $CONTAINER php artisan dusk --filter=ServiceWorkerRegistrationTest"
             ;;
         4)
-            DESCRIPTION="[Feature] IndexedDB Synchronization Test: IndexedDBに同期済みデータが正しく保存され、オフラインで利用可能か検証します。"
-            TEST_CMD="docker exec $CONTAINER php artisan test --filter=IndexedDbSynchronizationTest"
+            DESCRIPTION="[Feature] IndexedDB Synchronization Test: IndexedDB同期完了のインジケータが表示されるか検証します。"
+            TEST_CMD="docker exec $CONTAINER php artisan dusk --filter=IndexedDbSynchronizationTest"
             ;;
         5)
-            DESCRIPTION="[Feature] Responsive Layout Test for Desktop: PCでの表示が期待通りのレイアウトか検証します。"
-            TEST_CMD="docker exec $CONTAINER php artisan test --filter=ResponsiveLayoutDesktopTest"
+            DESCRIPTION="[Feature] Responsive Layout Test for Desktop: PC向けレイアウトが正しく表示されるか検証します。"
+            TEST_CMD="docker exec $CONTAINER php artisan dusk --filter=ResponsiveLayoutDesktopTest"
             ;;
         6)
-            DESCRIPTION="[Feature] Responsive Layout Test for Mobile: スマホでの表示が最適化され、UIが正しく機能するか検証します。"
-            TEST_CMD="docker exec $CONTAINER php artisan test --filter=ResponsiveLayoutMobileTest"
+            DESCRIPTION="[Feature] Responsive Layout Test for Mobile: モバイル向けレイアウトが正しく表示されるか検証します。"
+            TEST_CMD="docker exec $CONTAINER php artisan dusk --filter=ResponsiveLayoutMobileTest"
             ;;
         7)
-            DESCRIPTION="[Feature] WebRoutesTest: ホーム、チャット、知識登録・一覧などのWebルートが正しく表示されるか検証します。"
+            DESCRIPTION="[Feature] WebRoutesTest: 各Webルートが正しく表示されるか検証します。"
             TEST_CMD="docker exec $CONTAINER php artisan test --filter=WebRoutesTest"
             ;;
         8)
-            DESCRIPTION="[Feature] ChatControllerTest: /chatエンドポイントのPOSTリクエストに対して正しいJSONレスポンスが返るか検証します。"
+            DESCRIPTION="[Feature] ChatControllerTest: /chatエンドポイントへのPOSTで正しいJSONが返るか検証します。"
             TEST_CMD="docker exec $CONTAINER php artisan test --filter=ChatControllerTest"
             ;;
         9)
-            DESCRIPTION="[Unit] AIEngineTest: AIEngineが入力キーワードに基づき知識応答またはデフォルト応答を返すか検証します。"
+            DESCRIPTION="[Unit] AIEngineTest: AIEngineの内部ロジックを検証します。"
             TEST_CMD="docker exec $CONTAINER php artisan test --filter=AIEngineTest"
             ;;
         10)
-            DESCRIPTION="[Unit] ChatServiceTest: チャットサービスの内部ロジック（例:'どんなことを知ってる？'の入力処理）が正しく動作するか検証します。"
+            DESCRIPTION="[Unit] ChatServiceTest: チャットサービスの内部ロジックが期待通りに動作するか検証します。"
             TEST_CMD="docker exec $CONTAINER php artisan test --filter=ChatServiceTest"
             ;;
         11)
-            DESCRIPTION="[Feature] SyncApiTest: /api/syncおよび/api/configエンドポイントが正しいJSON構造と内容を返すか検証します。"
+            DESCRIPTION="[Feature] SyncApiTest: APIエンドポイントが正しいJSONを返すか検証します。"
             TEST_CMD="docker exec $CONTAINER php artisan test --filter=SyncApiTest"
             ;;
         12)
-            DESCRIPTION="[Feature] ExampleTest: アプリケーションの基本動作（ルートへのアクセス等）が正常に行われるか検証します。"
+            DESCRIPTION="[Feature] ExampleTest: アプリケーションの基本動作を検証します。"
             TEST_CMD="docker exec $CONTAINER php artisan test --filter=ExampleTest"
             ;;
         13)
             DESCRIPTION="全てのテスト: プロジェクト全体のテストを実行します。"
-            TEST_CMD="docker exec $CONTAINER php artisan test"
+            # 注意: Dusk テストと通常のテストが混在するため、ここは分けて実行するのが望ましい
+            # 例として、まず通常のテスト、その後 dusk テストを実行する
+            TEST_CMD="docker exec $CONTAINER php artisan test && docker exec $CONTAINER php artisan dusk"
             ;;
         q|Q)
             echo "終了します。"
@@ -124,7 +128,7 @@ while true; do
 
     if [[ "$confirm" == "Y" || "$confirm" == "y" || "$confirm" == "" ]]; then
         echo ""
-        echo "テスト実行中..."
+        # spinner関数内でシンプルな進捗表示をするので、ここでは「テスト実行中...」の重複表示は避ける
         run_command_with_spinner "$TEST_CMD"
     else
         echo "実行をキャンセルしました。メニューに戻ります。"

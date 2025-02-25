@@ -16,9 +16,16 @@
 </head>
 <body>
 <h1>キャッシュされた知識一覧</h1>
+
+<!-- IndexedDB 同期状態を示すインジケータ -->
+<div id="indexeddb-status" style="display:none; background: #dff0d8; color: #3c763d; padding: 10px; text-align: center; margin-bottom: 10px;">
+    Data Synchronized
+</div>
+
 <div id="knowledge-list">
     <!-- IndexedDB から取得した知識データがここに表示される -->
 </div>
+
 <!-- チャット画面へ戻るリンク -->
 <p><a href="/chat" class="btn">チャット画面に戻る</a></p>
 
@@ -26,7 +33,20 @@
 <script src="/js/sync.js"></script>
 <script>
     // ページ読み込み時に IndexedDB からデータを表示する
-    document.addEventListener("DOMContentLoaded", displayKnowledgeData);
+    document.addEventListener("DOMContentLoaded", function() {
+        displayKnowledgeData();
+    });
+
+    // IndexedDB の同期が完了したら呼び出される関数（例）
+    function onIndexedDbSynchronized() {
+        var statusEl = document.getElementById('indexeddb-status');
+        statusEl.style.display = 'block';
+        statusEl.innerText = 'Data Synchronized';
+    }
+
+    // 例: sync.js 内の処理が完了したタイミングで onIndexedDbSynchronized() を呼び出す場合は、
+    // sync.js 側で window.onIndexedDbSynchronized() を呼び出すか、
+    // 以下のようにコールバックとして渡すなどの方法で実装してください。
 </script>
 </body>
 </html>

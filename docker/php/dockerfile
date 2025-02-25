@@ -13,9 +13,21 @@ RUN apt-get update && apt-get install -y \
     zsh \
     libpq-dev \
     netcat-openbsd \
+    wget \
+    gnupg2 \
   && docker-php-ext-install pdo_pgsql bcmath \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
+
+# Laravel Dusk 用のChrome と ChromeDriver のインストール
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+  && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+  && apt-get update && apt-get install -y google-chrome-stable \
+  && wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux64.zip \
+  && unzip /tmp/chromedriver.zip -d /usr/local/bin/ \
+  && rm /tmp/chromedriver.zip \
+  && chmod +x /usr/local/bin/chromedriver \
+  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Composer のインストール（マルチステージビルドの場合は Composer イメージからコピー）
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

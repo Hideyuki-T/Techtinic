@@ -20,6 +20,9 @@
     現在、オフライン状態です。最新のデータは取得できません。
 </div>
 
+<!-- サービスワーカー登録状態のインジケータ -->
+<div id="sw-status">Registering Service Worker...</div>
+
 <!-- 上部のリンク -->
 <div style="margin-bottom: 10px;">
     <a href="/teach" class="btn">Knowledge Registration</a>
@@ -106,9 +109,12 @@
         navigator.serviceWorker.register('/service-worker.js', { type: 'module' })
             .then(function(registration) {
                 console.log('Service Worker registered with scope:', registration.scope);
+                // 登録完了後、インジケータを更新
+                document.getElementById('sw-status').innerText = 'Service Worker Registered';
             })
             .catch(function(error) {
                 console.error('Service Worker registration failed:', error);
+                document.getElementById('sw-status').innerText = 'Service Worker Registration Failed';
             });
     }
 </script>

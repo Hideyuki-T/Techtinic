@@ -42,7 +42,7 @@ async function syncDataFromPC() {
     const hostname = window.location.hostname;
     console.log("使用するホスト名:", hostname);
     // 絶対URLを組み立てる（ポート番号が必要な場合は適宜調整）
-    let syncUrl = `http://${hostname}:8080/api/sync`;
+    let syncUrl = `https://${hostname}:8080/api/sync`;
     fetchWithTimeout(syncUrl, { timeout: 10000 })
         .then(response => {
             if (!response.headers.get('Content-Type')?.includes('application/json')) {

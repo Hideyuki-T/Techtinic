@@ -3,7 +3,6 @@
 namespace Tests\Browser;
 
 use Laravel\Dusk\Browser;
-use Tests\DuskTestCase;
 
 class ResponsiveLayoutMobileTest extends DuskTestCase
 {

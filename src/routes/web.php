@@ -19,7 +19,7 @@ use App\Http\Controllers\KnowledgeController;
 // ルートページ
 Route::get('/', fn() => view('welcome'));
 
-// チャット関連ルートグループ（例: http://localhost:8080/chat）
+// チャット関連ルートグループ（例: https://localhost:8080/chat）
 Route::prefix('chat')->group(function () {
     Route::get('/knowledge', [ChatController::class, 'knowledge']);
     // チャット画面の表示（resources/views/techtinic/chat.blade.php）

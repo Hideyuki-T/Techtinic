@@ -30,7 +30,7 @@ while true; do
     echo "2) [Feature] Docker Container Communication Test"
     echo "   - app、nginx、postgresqlの各コンテナ間で疎通ができるか検証"
     echo "3) [Feature] Service Worker Registration Test (Dusk)"
-    echo "   - サービスワーカーが正しく登録され、インジケータが表示されるか検証"
+    echo "   - (一旦保留)サービスワーカーが正しく登録され、インジケータが表示されるか検証"
     echo "4) [Feature] IndexedDB Synchronization Test (Dusk)"
     echo "   - IndexedDB同期完了のインジケータが表示されるか検証"
     echo "5) [Feature] Responsive Layout Test for Desktop (Dusk)"
@@ -49,7 +49,9 @@ while true; do
     echo "    - APIエンドポイントが正しいJSONを返すか検証"
     echo "12) [Feature] ExampleTest"
     echo "    - アプリケーションの基本動作を検証"
-    echo "13) 全てのテストを実行"
+    echo "13) [E2E] Service Worker Integration Test (Puppeteer)"
+    echo "    - ブラウザ環境でサービスワーカーの動作やネットワークリクエストの挙動を検証"
+    echo "14) 全てのテストを実行"
     echo "q) 終了する"
     read -p "番号を入力: " choice
 
@@ -105,6 +107,11 @@ while true; do
             TEST_CMD="docker exec $CONTAINER php artisan test --filter=ExampleTest"
             ;;
         13)
+            DESCRIPTION="[Feature] Service Worker Integration Test (Puppeteer): サービスワーカーのインストール・フェッチ処理を Puppeteer で検証します。"
+            # 例: Puppeteer 経由でテストを実行するスクリプト (serviceWorker.test.js を実行)
+            TEST_CMD="docker exec $CONTAINER npm run test:service-worker"
+            ;;
+        14)
             DESCRIPTION="全てのテスト: プロジェクト全体のテストを実行します。"
             # 注意: Dusk テストと通常のテストが混在するため、ここは分けて実行するのが望ましい
             # 例として、まず通常のテスト、その後 dusk テストを実行する

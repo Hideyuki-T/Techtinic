@@ -20,7 +20,6 @@ RUN apt-get update && apt-get install -y \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-
 # Laravel Dusk 用のChrome と ChromeDriver のインストール
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
   && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
@@ -30,6 +29,10 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add
   && rm /tmp/chromedriver.zip \
   && chmod +x /usr/local/bin/chromedriver \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Laravel Dusk が期待する場所に Chromedriver をコピー
+RUN mkdir -p /var/www/html/vendor/laravel/dusk/bin && cp /usr/local/bin/chromedriver /var/www/html/vendor/laravel/dusk/bin/chromedriver-linux
+
 
 # Composer のインストール（マルチステージビルドの場合は Composer イメージからコピー）
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer

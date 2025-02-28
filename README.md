@@ -37,3 +37,5 @@ ___
 ___
 ### <span style="color: #FFA07A;">開発者情報</span>
 #### 作成者：Hideyuki-T
+___
+## [より詳しいマニュアルはここです。](./src/Tectinic_manual.sh)

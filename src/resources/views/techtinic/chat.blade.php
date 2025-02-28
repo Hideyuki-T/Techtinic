@@ -8,6 +8,12 @@
     <!-- axiosライブラリの読み込み -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <link rel="manifest" href="/manifest.json">
+    <!-- CSRF トークンの設定 -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script>
+        // Axios のリクエストヘッダーに CSRF トークンをセット
+        axios.defaults.headers.common['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    </script>
     <!-- idbライブラリを ESモジュール形式で読み込み、グローバルに公開 -->
     <script type="module">
         import { openDB } from "/js/idb.min.js";

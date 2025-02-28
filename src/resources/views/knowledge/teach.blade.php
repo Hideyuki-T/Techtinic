@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Techtinic 知識登録</title>
     <link rel="stylesheet" href="/css/style.css">
-    <!-- その他必要なスクリプト等 -->
+    <!-- CSRF トークンの meta タグ -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
 <div style="margin-bottom: 10px;">

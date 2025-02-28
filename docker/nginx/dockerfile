@@ -7,9 +7,9 @@ ENV TZ=Asia/Tokyo
 RUN apk add --no-cache nss-tools curl openssl
 
 #証明書をコピーする。
-COPY ./docker/nginx/ssl/nginx-selfsigned.crt /etc/nginx/ssl/nginx-selfsigned.crt
-COPY ./docker/nginx/ssl/nginx-selfsigned.key /etc/nginx/ssl/nginx-selfsigned.key
-RUN chmod 644 /etc/nginx/ssl/nginx-selfsigned.crt /etc/nginx/ssl/nginx-selfsigned.key
+COPY ./docker/nginx/ssl/server-cert.pem /etc/nginx/ssl/server-cert.pem
+COPY ./docker/nginx/ssl/server-key.pem /etc/nginx/ssl/server-key.pem
+RUN chmod 644 /etc/nginx/ssl/server-key.pem /etc/nginx/ssl/server-key.pem
 
 
 # nginxの設定ファイルをコピー

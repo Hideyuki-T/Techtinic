@@ -16,30 +16,18 @@ RUN apt-get update && apt-get install -y \
     wget \
     gnupg2 \
     libzip-dev \
-  && docker-php-ext-install pdo_pgsql bcmath zip \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
+    ca-certificates \
+    fonts-liberation \
+    libnss3 \
+    libxss1 \
+    libasound2
 
-# Laravel Dusk 用のChrome と ChromeDriver のインストール
-RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
-  && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-  && apt-get update && apt-get install -y google-chrome-stable \
-  && wget -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux64.zip \
-  && unzip /tmp/chromedriver.zip -d /usr/local/bin/ \
-  && rm /tmp/chromedriver.zip \
-  && chmod +x /usr/local/bin/chromedriver \
-  && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Laravel Dusk が期待する場所に Chromedriver をコピー
-RUN mkdir -p /var/www/html/vendor/laravel/dusk/bin && cp /usr/local/bin/chromedriver /var/www/html/vendor/laravel/dusk/bin/chromedriver-linux
-
+# PHP 拡張モジュールのインストール
+RUN docker-php-ext-install pdo_pgsql bcmath zip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Composer のインストール（マルチステージビルドの場合は Composer イメージからコピー）
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Node.js の必要な場合は、下記のように LTS版をコピー（例として Node 20 LTS）
-COPY --from=node:20.16 /usr/local/bin /usr/local/bin
-COPY --from=node:20.16 /usr/local/lib /usr/local/lib
 
 # PHP設定ファイルのコピー（必要に応じてカスタマイズ）
 COPY ./docker/php/php.ini /usr/local/etc/php/php.ini
@@ -57,7 +45,7 @@ RUN touch /root/.zshrc \
     && echo "alias Tt='php artisan knowledge:teach'" >> /root/.bashrc \
     && echo "alias Tr='php artisan chat:run'" >> /root/.bashrc
 
-# `zsh` をデフォルトシェルに設定
+# zsh をデフォルトシェルに設定
 RUN chsh -s $(which zsh)
 
 # コンテナ起動時の作業ディレクトリを指定

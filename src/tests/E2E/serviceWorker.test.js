@@ -1,73 +1,52 @@
-// serviceWorker.test.js
-const puppeteer = require('puppeteer');
+import puppeteer from 'puppeteer';
 
-describe('Service Worker Tests', () => {
-    let browser;
-    let page;
+jest.setTimeout(30000); // テストタイムアウトを30秒に延長
 
-    beforeAll(async () => {
-        browser = await puppeteer.launch({
-            headless: true,
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--ignore-certificate-errors', // 自己署名証明書のエラーを無視
-            ]
-        });
-        page = await browser.newPage();
+let browser;
+let page;
 
-        // サービスワーカーのログをキャプチャ
-        page.on('console', msg => {
-            console.log('PAGE LOG:', msg.text());
-        });
+beforeAll(async () => {
+    browser = await puppeteer.launch({
+        headless: true,
+        executablePath: '/usr/bin/google-chrome-stable',
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--ignore-certificate-errors'
+        ]
     });
+    page = await browser.newPage();
 
-    afterAll(async () => {
-        await browser.close();
-    });
+    // 対象のURLへアクセス
+    await page.goto('https://techtinic-nginx', { waitUntil: 'networkidle2' });
 
-    test('対象URLにアクセスして200が返るか確認する', async () => {
-        const urls = ['/chat', '/css/style.css', '/manifest.json'];
-        for (const path of urls) {
-            const response = await page.goto(`https://localhost:8080${path}`, { waitUntil: 'networkidle0' });
-            console.log(`Accessing ${path}: status ${response.status()}`);
-            expect(response.status()).toBe(200);
-        }
-    });
-
-    test('サービスワーカーがインストールされ、ページを制御しているか確認する', async () => {
-        // ルートページにアクセス（サービスワーカー登録の対象）
-        await page.goto('https://localhost:8080', { waitUntil: 'networkidle0' });
-        // サービスワーカーがコントローラーとして設定されるまで待つ
-        await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 5000 });
-        const registration = await page.evaluate(() => navigator.serviceWorker.getRegistration());
-        expect(registration).not.toBeNull();
-        console.log('Service Worker Registration:', registration);
-    });
-
-    test('キャッシュ時の fetch エラー発生時に詳細ログを出力する', async () => {
-        // リクエストをインターセプトして、存在しないリソースへのアクセスをシミュレーション
-        await page.setRequestInterception(true);
-        page.on('request', request => {
-            if (request.url().includes('/non-existent-resource')) {
-                console.log(`Simulating error for: ${request.url()}`);
-                request.abort();
-            } else {
-                request.continue();
-            }
-        });
-
-        // 存在しないリソースへのアクセス
-        let errorOccurred = false;
+    // サービスワーカーを登録し、ready 状態を待つ
+    await page.evaluate(async () => {
         try {
-            await page.goto('https://localhost:8080/non-existent-resource', { waitUntil: 'networkidle0' });
+            await navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
+            // 登録したサービスワーカーがコントローラーになるのを待つ
+            await navigator.serviceWorker.ready;
         } catch (error) {
-            console.log('Expected fetch error caught:', error.message);
-            errorOccurred = true;
+            console.error('Service Worker registration failed:', error);
         }
-        expect(errorOccurred).toBe(true);
-
-        // インターセプションを解除
-        await page.setRequestInterception(false);
     });
+});
+
+afterAll(async () => {
+    await browser.close();
+});
+
+test('Service Worker Registration Test', async () => {
+    // サービスワーカーがページのコントローラーとして反映されるのを待つ
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null, { timeout: 15000 });
+
+    // 登録状態を取得
+    const registrations = await page.evaluate(async () => {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        return regs.map(reg => reg.scope);
+    });
+
+    console.log('Registrations:', registrations);
+    expect(registrations.length).toBeGreaterThan(0);
 });

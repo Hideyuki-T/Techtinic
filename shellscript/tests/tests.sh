@@ -29,8 +29,8 @@ while true; do
     echo "   - HTTPS通信でホームページが正しくレスポンスを返すか検証"
     echo "2) [Feature] Docker Container Communication Test"
     echo "   - app、nginx、postgresqlの各コンテナ間で疎通ができるか検証"
-    echo "3) [Feature] Service Worker Registration Test (Dusk)"
-    echo "   - (一旦保留)サービスワーカーが正しく登録され、インジケータが表示されるか検証"
+    echo "3) [E2E] Service Worker Integration Test (Puppeteer)"
+    echo "   - ブラウザ環境でサービスワーカーの動作やネットワークリクエストの挙動を検証"
     echo "4) [Feature] IndexedDB Synchronization Test (Dusk)"
     echo "   - IndexedDB同期完了のインジケータが表示されるか検証"
     echo "5) [Feature] Responsive Layout Test for Desktop (Dusk)"
@@ -49,16 +49,13 @@ while true; do
     echo "    - APIエンドポイントが正しいJSONを返すか検証"
     echo "12) [Feature] ExampleTest"
     echo "    - アプリケーションの基本動作を検証"
-    echo "13) [E2E] Service Worker Integration Test (Puppeteer)"
-    echo "    - ブラウザ環境でサービスワーカーの動作やネットワークリクエストの挙動を検証"
-    echo "14) 全てのテストを実行"
+    echo "13) 全てのテストを実行"
     echo "q) 終了する"
     read -p "番号を入力: " choice
 
     case $choice in
         1)
             DESCRIPTION="[Feature] HomePage HTTPS Response Test: HTTPS通信でホームページが正しくレスポンスを返すか検証します。"
-            # Feature テストは php artisan test を使用
             TEST_CMD="docker exec $CONTAINER php artisan test --filter=HomePageHttpsResponseTest"
             ;;
         2)
@@ -66,9 +63,9 @@ while true; do
             TEST_CMD="docker exec $CONTAINER php artisan test --filter=DockerContainerCommunicationTest"
             ;;
         3)
-            DESCRIPTION="[Feature] Service Worker Registration Test: サービスワーカーの登録状態を検証します。"
-            # Dusk テストは php artisan dusk を使用
-            TEST_CMD="docker exec $CONTAINER php artisan dusk --filter=ServiceWorkerRegistrationTest"
+            DESCRIPTION="[E2E] Service Worker Integration Test (Puppeteer): ブラウザ環境でサービスワーカーの動作やネットワークリクエストの挙動を検証します。"
+            # Puppeteer を用いて tests/E2E/ 内のテストを実行
+            TEST_CMD="docker exec $CONTAINER npm run test:service-worker"
             ;;
         4)
             DESCRIPTION="[Feature] IndexedDB Synchronization Test: IndexedDB同期完了のインジケータが表示されるか検証します。"
@@ -107,14 +104,7 @@ while true; do
             TEST_CMD="docker exec $CONTAINER php artisan test --filter=ExampleTest"
             ;;
         13)
-            DESCRIPTION="[Feature] Service Worker Integration Test (Puppeteer): サービスワーカーのインストール・フェッチ処理を Puppeteer で検証します。"
-            # 例: Puppeteer 経由でテストを実行するスクリプト (serviceWorker.test.js を実行)
-            TEST_CMD="docker exec $CONTAINER npm run test:service-worker"
-            ;;
-        14)
             DESCRIPTION="全てのテスト: プロジェクト全体のテストを実行します。"
-            # 注意: Dusk テストと通常のテストが混在するため、ここは分けて実行するのが望ましい
-            # 例として、まず通常のテスト、その後 dusk テストを実行する
             TEST_CMD="docker exec $CONTAINER php artisan test && docker exec $CONTAINER php artisan dusk"
             ;;
         q|Q)
@@ -127,7 +117,6 @@ while true; do
             ;;
     esac
 
-    # 説明文を表示
     echo ""
     echo "$DESCRIPTION"
     echo ""
@@ -135,7 +124,6 @@ while true; do
 
     if [[ "$confirm" == "Y" || "$confirm" == "y" || "$confirm" == "" ]]; then
         echo ""
-        # spinner関数内でシンプルな進捗表示をするので、ここでは「テスト実行中...」の重複表示は避ける
         run_command_with_spinner "$TEST_CMD"
     else
         echo "実行をキャンセルしました。メニューに戻ります。"

@@ -1,4 +1,5 @@
-import { openDB } from '/js/idb.min.js';
+// 静的な import を削除し、代わりに動的 import 用の Promise を定義
+let openDBPromise = import('/js/idb.min.js').then(module => module.openDB);
 
 const CACHE_NAME = 'techtinic-cache-v1';
 const urlsToCache = [
@@ -66,7 +67,7 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-// その他のリクエストはキャッシュまたはネットワークから取得
+    // その他のリクエストはキャッシュまたはネットワークから取得
     event.respondWith(
         caches.match(event.request)
             .then((response) => response || fetch(event.request))
@@ -90,6 +91,8 @@ async function handleOfflineChatWithBody(reqText) {
             console.error("JSONパースエラー:", e);
         }
         const userInput = reqData.message || '';
+        // 動的にインポートした openDB を利用
+        const openDB = await openDBPromise;
         const db = await openDB('techtinic-db', 1);
         const tx = db.transaction('knowledge', 'readonly');
         const store = tx.objectStore('knowledge');
@@ -144,14 +147,17 @@ async function handleOfflineChatWithBody(reqText) {
 self.addEventListener('activate', (event) => {
     const cacheWhitelist = [CACHE_NAME];
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
-            return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (!cacheWhitelist.includes(cacheName)) {
-                        return caches.delete(cacheName);
-                    }
-                })
-            );
-        })
+        Promise.all([
+            caches.keys().then((cacheNames) => {
+                return Promise.all(
+                    cacheNames.map((cacheName) => {
+                        if (!cacheWhitelist.includes(cacheName)) {
+                            return caches.delete(cacheName);
+                        }
+                    })
+                );
+            }),
+            self.clients.claim()
+        ])
     );
 });

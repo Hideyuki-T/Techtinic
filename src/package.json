@@ -1,11 +1,16 @@
 {
     "private": true,
     "type": "module",
+    "name": "serviceworker-test",
+    "version": "1.0.0",
     "scripts": {
         "dev": "vite",
         "build": "vite build",
         "test": "jest",
         "test:service-worker": "jest tests/E2E/serviceWorker.test.js"
+    },
+    "jest": {
+        "testMatch": ["<rootDir>/tests/**/*.test.js"]
     },
     "devDependencies": {
         "@babel/core": "^7.26.9",

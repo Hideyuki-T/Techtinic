@@ -5,6 +5,9 @@ use Illuminate\Support\ServiceProvider;
 
 return [
 
+    'sync_server_ip' => env('SYNC_SERVER_IP', 'localhost'),
+
+
     /*
     |--------------------------------------------------------------------------
     | Application Name

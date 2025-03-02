@@ -11,27 +11,36 @@ class AIEngineTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
-    public function it_returns_a_knowledge_response_when_keyword_matches()
+    /**
+     * キーワードにマッチする知識が存在する場合、その知識の内容を返すか検証するテスト
+     *
+     * @return void
+     */
+    public function test_getResponse_returns_knowledge_content_when_keyword_matches()
     {
-        // テスト用に知識を作成
+        // テスト用の知識データを作成
         Knowledge::create([
-            'title' => 'テスト知識',
-            'content' => 'これはテストの知識です。',
+            'title'   => 'テスト知識',
+            'content' => 'これはテストの知識です。'
         ]);
 
         $aiEngine = new AIEngine();
+        // タイトルに "テスト" が含まれているので、知識が見つかるはず
         $response = $aiEngine->getResponse('テスト');
 
         $this->assertEquals('これはテストの知識です。', $response);
     }
 
-    /** @test */
-    public function it_returns_default_response_when_no_match_found()
+    /**
+     * キーワードにマッチする知識が存在しない場合、デフォルトの応答を返すか検証するテスト
+     *
+     * @return void
+     */
+    public function test_getResponse_returns_default_response_when_no_match_found()
     {
         $aiEngine = new AIEngine();
         $response = $aiEngine->getResponse('未登録のキーワード');
 
-        $this->assertEquals('申し訳ありません、その知識はまだ教えられていません。', $response);
+        $this->assertEquals("それが何かはまだ知らないや。ごめん。。", $response);
     }
 }

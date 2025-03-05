@@ -19,8 +19,9 @@ use App\Http\Controllers\KnowledgeController;
 // ルートページ
 Route::get('/', fn() => view('welcome'));
 
-// チャット関連ルートグループ（例: http://localhost:8080/chat）
+// チャット関連ルートグループ（例: https://localhost:8080/chat）
 Route::prefix('chat')->group(function () {
+    Route::get('/knowledge', [ChatController::class, 'knowledge']);
     // チャット画面の表示（resources/views/techtinic/chat.blade.php）
     Route::get('/', fn() => view('techtinic.chat'));
     // チャットの API エンドポイント
@@ -28,6 +29,9 @@ Route::prefix('chat')->group(function () {
 });
 
 // 知識登録画面および処理（例: http://localhost:8080/teach）
-// GET でフォーム表示、POST で登録処理を行う
 Route::get('/teach', [KnowledgeController::class, 'create']);
 Route::post('/teach', [KnowledgeController::class, 'store']);
+
+// 知識一覧ページ（例: http://localhost:8080/knowledge）
+Route::get('/knowledge', fn() => view('knowledge.knowledge'));
+

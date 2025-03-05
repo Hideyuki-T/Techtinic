@@ -1,49 +1,68 @@
+version: '3.8'
 services:
   # PHP (Laravel) サービス
   app:
-    container_name: techtinic-app   # 既存と重複しないユニークなコンテナ名
+    container_name: techtinic-app
     build:
       context: .
       dockerfile: ./docker/php/Dockerfile
     volumes:
-      - ./src:/var/www/html          # Laravelプロジェクトのソースコード
-      - ./.ssh:/root/.ssh            # SSH設定（必要な場合）
-      - ./docs:/var/www/html/docs    # ドキュメント用ディレクトリ
+      - ./src:/var/www/html
+      - storage-data:/var/www/html/storage
+      - ./.ssh:/root/.ssh
+      - ./docs:/var/www/html/docs
     environment:
-    - DB_CONNECTION=pgsql
-    - DB_HOST=techtinic-db
-    - DB_PORT=5432
-    - DB_DATABASE=techtinic_db
-    - DB_USERNAME=hideyuki
-    - DB_PASSWORD=12345
+      - DB_CONNECTION=pgsql
+      - DB_HOST=techtinic-db
+      - DB_PORT=5432
+      - DB_DATABASE=techtinic_db
+      - DB_USERNAME=hideyuki
+      - DB_PASSWORD=12345
     depends_on:
       - db
+    command: bash -c "mkdir -p /var/www/html/storage/logs /var/www/html/storage/framework/views && chown -R www-data:www-data /var/www/html/storage && php-fpm"
 
-  # nginx サービス
+  # nginx サービス（HTTPS対応）
   web:
-    container_name: techtinic-nginx  # ユニークなコンテナ名
+    container_name: techtinic-nginx
     build:
       context: .
       dockerfile: ./docker/nginx/Dockerfile
     ports:
-      - "8080:80"                    # ホスト側 8080 を使用（既存の 80 と競合しないように）
+      - '8080:443'
     volumes:
       - ./src:/var/www/html
+      - storage-data:/var/www/html/storage
+      - ./docker/nginx/ssl:/etc/nginx/ssl
     depends_on:
       - app
 
   # PostgreSQL サービス
   db:
-    container_name: techtinic-db     # ユニークなコンテナ名
+    container_name: techtinic-db
     image: postgres:13
     environment:
       POSTGRES_USER: hideyuki
       POSTGRES_PASSWORD: 12345
       POSTGRES_DB: techtinic_db
     ports:
-      - "5433:5432"                  # ホスト側 5433 を使用（既存のMySQLや他のDBと競合しないように）
+      - '5433:5432'
     volumes:
       - techtinic-db-volume:/var/lib/postgresql/data
 
+  # Puppeteer ベースの Service Worker テスト用コンテナ
+  test:
+    container_name: techtinic-test
+    build:
+      context: .
+      dockerfile: ./docker/test/Dockerfile
+    working_dir: /var/www/html/src
+    volumes:
+      - ./src:/var/www/html/src
+      - ./tests:/var/www/html/tests
+    depends_on:
+      - web
+
 volumes:
   techtinic-db-volume:
+  storage-data:

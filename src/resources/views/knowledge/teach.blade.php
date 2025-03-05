@@ -4,17 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Techtinic 知識登録</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; }
-        input[type="text"],
-        textarea { width: 100%; padding: 8px; box-sizing: border-box; }
-        button { padding: 10px 20px; font-size: 16px; }
-        .alert { padding: 10px; background-color: #dff0d8; color: #3c763d; margin-bottom: 20px; }
-    </style>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- CSRF トークンの meta タグ -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
+<div style="margin-bottom: 10px;">
+    <a href="/chat" class="btn">チャット画面に戻る</a>
+</div>
+
 <h1>Techtinic に知識を教える</h1>
 
 @if(session('success'))
@@ -27,7 +25,7 @@
     @csrf
     <div class="form-group">
         <label for="category">カテゴリー</label>
-        <!-- ここでは自由入力にしていますが、必要ならドロップダウンで既存カテゴリーを選択できるように工夫も可能 -->
+        <!-- 自由入力（必要ならドロップダウンに変更可） -->
         <input type="text" name="category" id="category" placeholder="例: dockerコマンド" required>
     </div>
     <div class="form-group">
@@ -38,10 +36,26 @@
         <label for="content">本文</label>
         <textarea name="content" id="content" rows="4" placeholder="例: docker ps と入力して、起動中のコンテナ一覧を表示する" required></textarea>
     </div>
+
+    <!-- 既存タグの一覧（チェックボックス形式） -->
     <div class="form-group">
-        <label for="tags">タグ (カンマ区切り)</label>
-        <input type="text" name="tags" id="tags" placeholder="例: docker, コンテナ, 状態確認">
+        <label>既存のタグから選択 (複数選択可)</label>
+        <div id="existing_tags">
+            @foreach($existingTags as $tag)
+                <label>
+                    <input type="checkbox" name="existing_tags[]" value="{{ $tag->id }}">
+                    {{ $tag->name }}
+                </label>
+            @endforeach
+        </div>
     </div>
+
+    <!-- 新規タグ入力 -->
+    <div class="form-group">
+        <label for="new_tags">新しいタグ (カンマ区切りで入力)</label>
+        <input type="text" name="new_tags" id="new_tags" placeholder="例: docker, コンテナ, 状態確認">
+    </div>
+
     <button type="submit">知識を登録する</button>
 </form>
 </body>

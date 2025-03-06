@@ -15,7 +15,9 @@ CN = localhost
 
 [ alt_names ]
 IP.1 = 172.20.10.2
+IP.2 = 192.168.2.177
 DNS.1 = localhost
+DNS.2 = techtinic
 
 [ v3_server_csr ]
 # authorityKeyIdentifier は含めない (CSR生成時はまだ発行者情報が無いため)

@@ -50,6 +50,8 @@ services:
     volumes:
       - techtinic-db-volume:/var/lib/postgresql/data
 
+  # ﾛｸﾞｲﾝするなら：docker exec -it techtinic-db psql -U hideyuki -d techtinic_db
+
   # Puppeteer ベースの Service Worker テスト用コンテナ
   test:
     container_name: techtinic-test

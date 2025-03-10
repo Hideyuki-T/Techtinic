@@ -12,7 +12,7 @@ const urlsToCache = [
     '/js/idb.min.js',             // IndexedDBライブラリ
     '/images/icons/icon-192x192.png',  // アイコン
     '/images/icons/icon-512x512.png',  // 大きなアイコン
-    '/favicon.ico',               // favicon もキャッシュ対象に追加
+    '/favicon.ico',               // favicon
     '/offline.html',              // オフライン用フォールバックページ
 ];
 
@@ -39,11 +39,9 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// fetch イベントでチャット用APIとその他のリクエストを処理
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // チャット用API (/api/chat) の場合
     if (url.pathname.startsWith('/api/chat')) {
         event.respondWith(
             (async function() {
@@ -54,11 +52,9 @@ self.addEventListener('fetch', (event) => {
                     console.error("リクエストボディ読み込みエラー:", e);
                 }
                 try {
-                    // オンラインの場合、通常のネットワークリクエストを試みる
                     return await fetch(event.request);
                 } catch (error) {
                     console.error('通常の fetch でエラー発生:', error);
-                    // ネットワークエラーの場合は offline 用処理へフォールバック
                     return await handleOfflineChatWithBody(reqBodyText);
                 }
             })()
@@ -66,17 +62,34 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // その他のリクエストはキャッシュまたはネットワークから取得
     event.respondWith(
-        caches.match(event.request)
-            .then((response) => response || fetch(event.request))
-            .catch((error) => {
-                console.error('キャッシュ/ネットワーク取得エラー:', error);
-                // オフラインでエラーが発生しても、フォールバックしない（または適宜空のResponseを返す）
-                return new Response(null, { status: 503, statusText: 'Service Unavailable' });
+        fetch(event.request)
+            .then((networkResponse) => {
+                // ネットワークから取得できたのでキャッシュを更新
+                const responseClone = networkResponse.clone();
+                caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(event.request, responseClone);
+                });
+                return networkResponse;
+            })
+            .catch(() => {
+                // ネットワーク取得に失敗した場合はキャッシュから取得
+                return caches.match(event.request)
+                    .then((cachedResponse) => {
+                        if (cachedResponse) {
+                            return cachedResponse;
+                        }
+                        // ナビゲーションリクエストの場合は offline.html を返す
+                        if (event.request.mode === 'navigate') {
+                            return caches.match('/offline.html');
+                        }
+                        return new Response(null, { status: 503, statusText: 'Service Unavailable' });
+                    });
             })
     );
 });
+
+
 
 // オフライン時のチャット応答処理
 async function handleOfflineChatWithBody(reqText) {
@@ -90,19 +103,42 @@ async function handleOfflineChatWithBody(reqText) {
             console.error("JSONパースエラー:", e);
         }
         const userInput = reqData.message || '';
-        // 動的にインポートした openDB を利用
-        const db = await idb.openDB('techtinic-db', 1, {
-            upgrade(db) {
-                if (!db.objectStoreNames.contains('knowledge')) {
-                    db.createObjectStore('knowledge', { keyPath: 'id', autoIncrement: true });
-                }
-            }
-        });
-        const tx = db.transaction('knowledge', 'readonly');
-        const store = tx.objectStore('knowledge');
-        const allRecords = await store.getAll();
 
-        // 複数の候補をフィルタリング（タイトルまたは本文にユーザー入力が含まれているもの）
+        // IndexedDBへ接続
+        let db;
+        try {
+            db = await idb.openDB('techtinic-db', 1, {
+                upgrade(db) {
+                    if (!db.objectStoreNames.contains('knowledge')) {
+                        db.createObjectStore('knowledge', { keyPath: 'id', autoIncrement: true });
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("IndexedDB接続エラー:", e);
+            return new Response(JSON.stringify({
+                response: "オフラインなので応答できませんでした。（DB接続エラー）",
+                mode: 'default',
+                offline: true
+            }), { headers: { 'Content-Type': 'application/json' } });
+        }
+
+        // DBから 'knowledge' ストアの全レコードを取得
+        let allRecords = [];
+        try {
+            const tx = db.transaction('knowledge', 'readonly');
+            const store = tx.objectStore('knowledge');
+            allRecords = await store.getAll();
+        } catch (e) {
+            console.error("データ取得エラー:", e);
+            return new Response(JSON.stringify({
+                response: "オフラインなので応答できませんでした。（DB取得エラー）",
+                mode: 'default',
+                offline: true
+            }), { headers: { 'Content-Type': 'application/json' } });
+        }
+
+        // ユーザー入力に基づいて候補をフィルタリング（タイトルまたは本文にユーザー入力が含まれているもの）
         const matched = allRecords.filter(item =>
             item.title.toLowerCase().includes(userInput.toLowerCase()) ||
             item.content.toLowerCase().includes(userInput.toLowerCase())
@@ -123,7 +159,7 @@ async function handleOfflineChatWithBody(reqText) {
                 offline: true
             };
         } else {
-            // 候補が複数ある場合は選択肢として返す
+            // 複数ある場合は選択肢として返す
             responseData = {
                 response: "以下の情報が見つかったよ。どれか選んで！",
                 mode: 'selection',

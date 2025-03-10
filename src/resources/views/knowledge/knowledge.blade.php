@@ -36,7 +36,8 @@
 <p><a href="/chat" class="btn">チャット画面に戻る</a></p>
 
 <!-- sync.js の読み込み（IndexedDB 関連の処理が含まれる） -->
-<script src="/js/sync.js"></script>
+<script type="module" src="/js/sync.js"></script>
+
 <script>
     // ページ読み込み時に IndexedDB からデータを表示する
     document.addEventListener("DOMContentLoaded", function() {

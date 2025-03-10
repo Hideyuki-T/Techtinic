@@ -1,3 +1,8 @@
+// sync.js をモジュールとして読み込みます
+import { openDB } from '/js/idb.min.js';
+// 必要に応じてグローバルに公開（オプション）
+window.idb = { openDB };
+
 console.log("sync.js loaded");
 console.log("window.idb:", window.idb);
 
@@ -57,11 +62,9 @@ async function syncDataFromPC() {
         .catch(error => console.error("同期失敗:", error));
 }
 
-
-
 // IndexedDB の初期化関数
 async function initDB() {
-    const db = await window.idb.openDB('techtinic-db', 1, {
+    const db = await openDB('techtinic-db', 1, {
         upgrade(db) {
             if (!db.objectStoreNames.contains('knowledge')) {
                 const store = db.createObjectStore('knowledge', { keyPath: 'id', autoIncrement: true });
@@ -115,8 +118,9 @@ async function displayKnowledgeData() {
     }
 }
 
-// グローバルに関数を公開する
+// グローバルに関数を公開する（必要な場合）
 window.initDB = initDB;
 window.saveKnowledgeData = saveKnowledgeData;
 window.getKnowledgeData = getKnowledgeData;
 window.syncDataFromPC = syncDataFromPC;
+window.displayKnowledgeData = displayKnowledgeData;

@@ -141,4 +141,25 @@ body {
         padding: 12px;
         font-size: 18px;
     }
+    /* 淡くかわいいパステルグラデーション背景 */
+    body {
+        background: linear-gradient(45deg, #f8cdda, #fceabb, #cfd9df);
+        background-size: 600% 600%;
+        animation: gradientAnimation 20s ease infinite;
+        color: #333; /* 文字色を濃いグレーにして読みやすく */
+    }
+
+    /* グラデーションアニメーション */
+    @keyframes gradientAnimation {
+        0% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+        }
+        100% {
+            background-position: 0% 100%;
+        }
+    }
+
 }

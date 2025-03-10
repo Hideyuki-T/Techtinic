@@ -1,5 +1,4 @@
-// 静的な import を削除し、代わりに動的 import 用の Promise を定義
-let openDBPromise = import('/js/idb.min.js').then(module => module.openDB);
+importScripts('/js/idb.min.js');
 
 const CACHE_NAME = 'techtinic-cache-v1';
 const urlsToCache = [
@@ -92,8 +91,13 @@ async function handleOfflineChatWithBody(reqText) {
         }
         const userInput = reqData.message || '';
         // 動的にインポートした openDB を利用
-        const openDB = await openDBPromise;
-        const db = await openDB('techtinic-db', 1);
+        const db = await idb.openDB('techtinic-db', 1, {
+            upgrade(db) {
+                if (!db.objectStoreNames.contains('knowledge')) {
+                    db.createObjectStore('knowledge', { keyPath: 'id', autoIncrement: true });
+                }
+            }
+        });
         const tx = db.transaction('knowledge', 'readonly');
         const store = tx.objectStore('knowledge');
         const allRecords = await store.getAll();
@@ -134,7 +138,7 @@ async function handleOfflineChatWithBody(reqText) {
     } catch (error) {
         console.error('handleOfflineChat 内のエラー:', error);
         return new Response(JSON.stringify({
-            response: "オフラインでも応答できませんでした。（内部エラー）",
+            response: "オフラインなので応答できませんでした。（内部エラー）",
             mode: 'default',
             offline: true
         }), {

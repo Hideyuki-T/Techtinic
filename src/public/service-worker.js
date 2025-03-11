@@ -1,4 +1,5 @@
-importScripts('/js/idb.min.js');
+
+import { openDB } from '/js/idb.min.js';
 
 const CACHE_NAME = 'techtinic-cache-v1';
 const urlsToCache = [

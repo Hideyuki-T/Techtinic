@@ -109,22 +109,21 @@
     }
 </script>
 
-<!-- Service Worker をモジュールとして登録 -->
 <script>
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/service-worker.js', { type: 'module' })
             .then(function(registration) {
                 console.log('Service Worker registered with scope:', registration.scope);
-                // 登録完了後、インジケータを更新
                 document.getElementById('sw-status').innerText = 'Service Worker Registered';
             })
             .catch(function(error) {
                 console.error('Service Worker registration failed:', error);
+                console.error('Error message:', error.message);
+                console.error('Error stack:', error.stack);
                 document.getElementById('sw-status').innerText = 'Service Worker Registration Failed';
             });
     }
 </script>
-
 <!-- main.js を読み込む (オフライン通知などの処理を含む) -->
 <script src="/js/main.js"></script>
 </body>

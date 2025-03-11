@@ -1,4 +1,4 @@
-const DB_NAME = "TechtinicDB";
+const DB_NAME = "techtinic-db";
 const DB_VERSION = 1;
 let db;
 

@@ -1,20 +1,19 @@
-
 import { openDB } from '/js/idb.min.js';
 
 const CACHE_NAME = 'techtinic-cache-v1';
 const urlsToCache = [
-    '/',                          // ルートページ
-    '/chat',                      // チャットページ（必要なら）
-    '/teach',                     // 知識登録ページ（必要なら）
-    '/knowledge',                 // 知識表示ページ（必要なら）
-    '/css/style.css',             // CSS
-    '/manifest.json',             // マニフェスト
-    '/js/sync.js',                // 同期スクリプト
-    '/js/idb.min.js',             // IndexedDBライブラリ
-    '/images/icons/icon-192x192.png',  // アイコン
-    '/images/icons/icon-512x512.png',  // 大きなアイコン
-    '/favicon.ico',               // favicon
-    '/offline.html',              // オフライン用フォールバックページ
+    '/',
+    '/chat',
+    '/teach',
+    '/knowledge',
+    '/css/style.css',
+    '/manifest.json',
+    '/js/sync.js',
+    '/js/idb.min.js',
+    '/images/icons/icon-192x192.png',
+    '/images/icons/icon-512x512.png',
+    '/favicon.ico',
+    '/offline.html',
 ];
 
 // インストール時にキャッシュを作成
@@ -23,7 +22,6 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('Opened cache');
-                // 個別に fetch してキャッシュに保存（個別エラーはログ出力）
                 return Promise.all(
                     urlsToCache.map(url => {
                         return fetch(url).then(response => {
@@ -74,13 +72,11 @@ self.addEventListener('fetch', (event) => {
                 return networkResponse;
             })
             .catch(() => {
-                // ネットワーク取得に失敗した場合はキャッシュから取得
                 return caches.match(event.request)
                     .then((cachedResponse) => {
                         if (cachedResponse) {
                             return cachedResponse;
                         }
-                        // ナビゲーションリクエストの場合は offline.html を返す
                         if (event.request.mode === 'navigate') {
                             return caches.match('/offline.html');
                         }
@@ -89,8 +85,6 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
-
-
 
 // オフライン時のチャット応答処理
 async function handleOfflineChatWithBody(reqText) {
@@ -105,10 +99,10 @@ async function handleOfflineChatWithBody(reqText) {
         }
         const userInput = reqData.message || '';
 
-        // IndexedDBへ接続
+        // IndexedDBへ接続 (修正: openDB を直接呼び出す)
         let db;
         try {
-            db = await idb.openDB('techtinic-db', 1, {
+            db = await openDB('techtinic-db', 1, {
                 upgrade(db) {
                     if (!db.objectStoreNames.contains('knowledge')) {
                         db.createObjectStore('knowledge', { keyPath: 'id', autoIncrement: true });
@@ -139,7 +133,7 @@ async function handleOfflineChatWithBody(reqText) {
             }), { headers: { 'Content-Type': 'application/json' } });
         }
 
-        // ユーザー入力に基づいて候補をフィルタリング（タイトルまたは本文にユーザー入力が含まれているもの）
+        // ユーザー入力に基づいて候補をフィルタリング
         const matched = allRecords.filter(item =>
             item.title.toLowerCase().includes(userInput.toLowerCase()) ||
             item.content.toLowerCase().includes(userInput.toLowerCase())
@@ -153,14 +147,12 @@ async function handleOfflineChatWithBody(reqText) {
                 offline: true
             };
         } else if (matched.length === 1) {
-            // 候補が1件だけなら、そのまま返す
             responseData = {
                 response: `確か...「${matched[0].title}」の内容はこうだったよ!\n${matched[0].content}`,
                 mode: 'default',
                 offline: true
             };
         } else {
-            // 複数ある場合は選択肢として返す
             responseData = {
                 response: "以下の情報が見つかったよ。どれか選んで！",
                 mode: 'selection',

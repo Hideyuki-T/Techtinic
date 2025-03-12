@@ -83,7 +83,7 @@
             .catch(function(error) {
                 console.error('Error:', error);
                 var chatBox = document.getElementById('chat-box');
-                chatBox.innerHTML += '<div class="message"><strong>Techtinic:</strong> エラーが発生しました。</div>';
+                chatBox.innerHTML += '<div class="message"><strong>Techtinic:</strong> エラーが発生しましたよ。</div>';
             });
     }
 

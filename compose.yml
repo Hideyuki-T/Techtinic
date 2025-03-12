@@ -53,17 +53,7 @@ services:
   # ﾛｸﾞｲﾝするなら：docker exec -it techtinic-db psql -U hideyuki -d techtinic_db
 
   # Puppeteer ベースの Service Worker テスト用コンテナ
-  test:
-    container_name: techtinic-test
-    build:
-      context: .
-      dockerfile: ./docker/test/Dockerfile
-    working_dir: /var/www/html/src
-    volumes:
-      - ./src:/var/www/html/src
-      - ./tests:/var/www/html/tests
-    depends_on:
-      - web
+  # テスト用のコンテナが必要なくなったので削除したよ。
 
 volumes:
   techtinic-db-volume:

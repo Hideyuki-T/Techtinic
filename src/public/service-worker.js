@@ -1,20 +1,19 @@
-// 静的な import を削除し、代わりに動的 import 用の Promise を定義
-let openDBPromise = import('/js/idb.min.js').then(module => module.openDB);
+import { openDB } from '/js/idb.min.js';
 
 const CACHE_NAME = 'techtinic-cache-v1';
 const urlsToCache = [
-    '/',                          // ルートページ
-    '/chat',                      // チャットページ（必要なら）
-    '/teach',                     // 知識登録ページ（必要なら）
-    '/knowledge',                 // 知識表示ページ（必要なら）
-    '/css/style.css',             // CSS
-    '/manifest.json',             // マニフェスト
-    '/js/sync.js',                // 同期スクリプト
-    '/js/idb.min.js',             // IndexedDBライブラリ
-    '/images/icons/icon-192x192.png',  // アイコン
-    '/images/icons/icon-512x512.png',  // 大きなアイコン
-    '/favicon.ico',               // favicon もキャッシュ対象に追加
-    '/offline.html',              // オフライン用フォールバックページ
+    '/',
+    '/chat',
+    '/teach',
+    '/knowledge',
+    '/css/style.css',
+    '/manifest.json',
+    '/js/sync.js',
+    '/js/idb.min.js',
+    '/images/icons/icon-192x192.png',
+    '/images/icons/icon-512x512.png',
+    '/favicon.ico',
+    '/offline.html',
 ];
 
 // インストール時にキャッシュを作成
@@ -23,7 +22,6 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('Opened cache');
-                // 個別に fetch してキャッシュに保存（個別エラーはログ出力）
                 return Promise.all(
                     urlsToCache.map(url => {
                         return fetch(url).then(response => {
@@ -40,11 +38,9 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// fetch イベントでチャット用APIとその他のリクエストを処理
 self.addEventListener('fetch', (event) => {
     const url = new URL(event.request.url);
 
-    // チャット用API (/api/chat) の場合
     if (url.pathname.startsWith('/api/chat')) {
         event.respondWith(
             (async function() {
@@ -55,11 +51,9 @@ self.addEventListener('fetch', (event) => {
                     console.error("リクエストボディ読み込みエラー:", e);
                 }
                 try {
-                    // オンラインの場合、通常のネットワークリクエストを試みる
                     return await fetch(event.request);
                 } catch (error) {
                     console.error('通常の fetch でエラー発生:', error);
-                    // ネットワークエラーの場合は offline 用処理へフォールバック
                     return await handleOfflineChatWithBody(reqBodyText);
                 }
             })()
@@ -67,14 +61,27 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // その他のリクエストはキャッシュまたはネットワークから取得
     event.respondWith(
-        caches.match(event.request)
-            .then((response) => response || fetch(event.request))
-            .catch((error) => {
-                console.error('キャッシュ/ネットワーク取得エラー:', error);
-                // オフラインでエラーが発生しても、フォールバックしない（または適宜空のResponseを返す）
-                return new Response(null, { status: 503, statusText: 'Service Unavailable' });
+        fetch(event.request)
+            .then((networkResponse) => {
+                // ネットワークから取得できたのでキャッシュを更新
+                const responseClone = networkResponse.clone();
+                caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(event.request, responseClone);
+                });
+                return networkResponse;
+            })
+            .catch(() => {
+                return caches.match(event.request)
+                    .then((cachedResponse) => {
+                        if (cachedResponse) {
+                            return cachedResponse;
+                        }
+                        if (event.request.mode === 'navigate') {
+                            return caches.match('/offline.html');
+                        }
+                        return new Response(null, { status: 503, statusText: 'Service Unavailable' });
+                    });
             })
     );
 });
@@ -91,14 +98,42 @@ async function handleOfflineChatWithBody(reqText) {
             console.error("JSONパースエラー:", e);
         }
         const userInput = reqData.message || '';
-        // 動的にインポートした openDB を利用
-        const openDB = await openDBPromise;
-        const db = await openDB('techtinic-db', 1);
-        const tx = db.transaction('knowledge', 'readonly');
-        const store = tx.objectStore('knowledge');
-        const allRecords = await store.getAll();
 
-        // 複数の候補をフィルタリング（タイトルまたは本文にユーザー入力が含まれているもの）
+        // IndexedDBへ接続 (修正: openDB を直接呼び出す)
+        let db;
+        try {
+            db = await openDB('techtinic-db', 1, {
+                upgrade(db) {
+                    if (!db.objectStoreNames.contains('knowledge')) {
+                        db.createObjectStore('knowledge', { keyPath: 'id', autoIncrement: true });
+                    }
+                }
+            });
+        } catch (e) {
+            console.error("IndexedDB接続エラー:", e);
+            return new Response(JSON.stringify({
+                response: "オフラインなので応答できませんでした。（DB接続エラー）",
+                mode: 'default',
+                offline: true
+            }), { headers: { 'Content-Type': 'application/json' } });
+        }
+
+        // DBから 'knowledge' ストアの全レコードを取得
+        let allRecords = [];
+        try {
+            const tx = db.transaction('knowledge', 'readonly');
+            const store = tx.objectStore('knowledge');
+            allRecords = await store.getAll();
+        } catch (e) {
+            console.error("データ取得エラー:", e);
+            return new Response(JSON.stringify({
+                response: "オフラインなので応答できませんでした。（DB取得エラー）",
+                mode: 'default',
+                offline: true
+            }), { headers: { 'Content-Type': 'application/json' } });
+        }
+
+        // ユーザー入力に基づいて候補をフィルタリング
         const matched = allRecords.filter(item =>
             item.title.toLowerCase().includes(userInput.toLowerCase()) ||
             item.content.toLowerCase().includes(userInput.toLowerCase())
@@ -112,14 +147,12 @@ async function handleOfflineChatWithBody(reqText) {
                 offline: true
             };
         } else if (matched.length === 1) {
-            // 候補が1件だけなら、そのまま返す
             responseData = {
                 response: `確か...「${matched[0].title}」の内容はこうだったよ!\n${matched[0].content}`,
                 mode: 'default',
                 offline: true
             };
         } else {
-            // 候補が複数ある場合は選択肢として返す
             responseData = {
                 response: "以下の情報が見つかったよ。どれか選んで！",
                 mode: 'selection',
@@ -134,7 +167,7 @@ async function handleOfflineChatWithBody(reqText) {
     } catch (error) {
         console.error('handleOfflineChat 内のエラー:', error);
         return new Response(JSON.stringify({
-            response: "オフラインでも応答できませんでした。（内部エラー）",
+            response: "オフラインなので応答できませんでした。（内部エラー）",
             mode: 'default',
             offline: true
         }), {

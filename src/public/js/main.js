@@ -1,9 +1,13 @@
 function updateOnlineStatus() {
     const banner = document.getElementById('offline-banner');
-    if (navigator.onLine) {
-        banner.style.display = 'none';
+    if (banner) {
+        if (navigator.onLine) {
+            banner.style.display = 'none';
+        } else {
+            banner.style.display = 'block';
+        }
     } else {
-        banner.style.display = 'block';
+        console.warn('offline-banner 要素が見つかりません。');
     }
 }
 

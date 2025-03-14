@@ -360,7 +360,7 @@ async function displayKnowledgeByDropdown() {
                         const itemDiv = document.createElement('div');
                         itemDiv.className = 'knowledge-item';
                         const timestampHTML = item.created_at
-                            ? `<div class="timestamp">作成日時: ${new Date(item.created_at).toLocaleString()}</div>`
+                            ? `<div class="timestamp">timestamp: ${new Date(item.created_at).toLocaleString()}</div>`
                             : '';
                         itemDiv.innerHTML = `
                             <div class="title"><strong>title: ${item.title}</strong></div>

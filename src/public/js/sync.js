@@ -40,7 +40,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else {
         console.log("Offline: 同期処理はスキップします。");
     }
+    // 初期表示は一覧表示
     await displayKnowledgeData();
+
+    // 表示切替用ボタンのイベントリスナー設定（一覧表示とカテゴリー別表示）
+    const listViewBtn = document.getElementById('listViewBtn');
+    const categoryViewBtn = document.getElementById('categoryViewBtn');
+    if (listViewBtn && categoryViewBtn) {
+        listViewBtn.addEventListener('click', async () => {
+            await displayKnowledgeData();
+        });
+        categoryViewBtn.addEventListener('click', async () => {
+            await displayKnowledgeByDropdown();
+        });
+    }
 });
 
 async function syncDataFromPC() {
@@ -95,8 +108,20 @@ async function getKnowledgeData() {
     return allItems;
 }
 
-// UI に IndexedDB のデータを反映する関数
-// IndexedDB から知識データを取得し、<div id="knowledge-list"> に対して DOM 操作を行って各知識項目を表示
+// 登録されている知識情報を削除する関数（指定した id のアイテムを削除）
+async function deleteKnowledgeItem(id) {
+    if (!confirm("本当に削除しても良いかな？")) {
+        return;
+    }
+    const db = await initDB();
+    const tx = db.transaction('knowledge', 'readwrite');
+    await tx.objectStore('knowledge').delete(id);
+    await tx.done;
+    console.log("知識情報を削除したよ。id:", id);
+    await displayKnowledgeData();
+}
+
+// UI に IndexedDB のデータを一覧表示する関数
 async function displayKnowledgeData() {
     try {
         const data = await getKnowledgeData();
@@ -111,33 +136,121 @@ async function displayKnowledgeData() {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'knowledge-item';
 
-                // カテゴリー情報の作成（存在する場合）
                 let categoriesHTML = '';
                 if (item.categories && item.categories.length > 0) {
                     const categoryNames = item.categories.map(cat => cat.name).join(', ');
                     categoriesHTML = `<span class="categories">categories:【${categoryNames}】</span>`;
                 }
 
-                // タグ情報の作成（存在する場合）
                 let tagsHTML = '';
                 if (item.tags && item.tags.length > 0) {
                     const tagNames = item.tags.map(tag => tag.name).join(', ');
                     tagsHTML = `<div class="tags"><small>tags:[${tagNames}]</small></div>`;
                 }
 
-                // 各要素をブロック要素で囲んで改行表示する
                 itemDiv.innerHTML = `
                 <div class="categories">${categoriesHTML}</div>
                 <div class="title"><strong>title:${item.title}</strong></div>
-                <div class="content">content:${item.content}</div>
+                <div class="content">content:<br>${item.content.replace(/\n/g, '<br>')}</div>
                 ${tagsHTML}
+                <div class="actions">
+                    <button onclick="deleteKnowledgeItem(${item.id})">削除</button>
+                </div>
                 `;
                 listDiv.appendChild(itemDiv);
             });
-
         }
     } catch (error) {
         console.error("知識データの表示に失敗しました:", error);
+    }
+}
+
+// カテゴリー選択用プルダウンで表示する関数
+async function displayKnowledgeByDropdown() {
+    try {
+        const data = await getKnowledgeData();
+        const listDiv = document.getElementById('knowledge-list');
+        if (listDiv) {
+            listDiv.innerHTML = '';
+            if (data.length === 0) {
+                listDiv.innerHTML = '<p>キャッシュされた知識はありません。</p>';
+                return;
+            }
+            // グループ化：カテゴリーごとにデータをまとめる
+            const categoryGroups = {};
+            data.forEach(item => {
+                if (item.categories && item.categories.length > 0) {
+                    item.categories.forEach(cat => {
+                        if (!categoryGroups[cat.name]) {
+                            categoryGroups[cat.name] = [];
+                        }
+                        categoryGroups[cat.name].push(item);
+                    });
+                } else {
+                    if (!categoryGroups["未分類"]) {
+                        categoryGroups["未分類"] = [];
+                    }
+                    categoryGroups["未分類"].push(item);
+                }
+            });
+
+            // プルダウン（select要素）を作成
+            const selectEl = document.createElement('select');
+            selectEl.id = 'categorySelect';
+            selectEl.style.marginBottom = '10px';
+
+            // 「すべて表示」オプション
+            const allOption = document.createElement('option');
+            allOption.value = 'all';
+            allOption.textContent = 'すべて表示';
+            selectEl.appendChild(allOption);
+
+            // グループ化された各カテゴリーをオプションとして追加
+            for (const category in categoryGroups) {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                selectEl.appendChild(option);
+            }
+
+            // プルダウンを画面に追加
+            listDiv.appendChild(selectEl);
+
+            // アイテム表示用コンテナを作成
+            const itemsContainer = document.createElement('div');
+            itemsContainer.id = 'itemsContainer';
+            listDiv.appendChild(itemsContainer);
+
+            // 選択されたカテゴリーに応じてアイテムを表示する関数
+            function displayItems(selectedCategory) {
+                itemsContainer.innerHTML = '';
+                let itemsToDisplay;
+                if (selectedCategory === 'all') {
+                    itemsToDisplay = data;
+                } else {
+                    itemsToDisplay = categoryGroups[selectedCategory] || [];
+                }
+                itemsToDisplay.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'knowledge-item';
+                    itemDiv.innerHTML = `
+                        <div class="title"><strong>title: ${item.title}</strong></div>
+                        <div class="content">content:<br>${item.content.replace(/\n/g, '<br>')}</div>
+                    `;
+                    itemsContainer.appendChild(itemDiv);
+                });
+            }
+
+            // 初期表示はすべて表示
+            displayItems('all');
+
+            // プルダウン変更時に表示を切り替え
+            selectEl.addEventListener('change', function() {
+                displayItems(this.value);
+            });
+        }
+    } catch (error) {
+        console.error("知識データのプルダウン表示に失敗しました:", error);
     }
 }
 
@@ -147,3 +260,5 @@ window.saveKnowledgeData = saveKnowledgeData;
 window.getKnowledgeData = getKnowledgeData;
 window.syncDataFromPC = syncDataFromPC;
 window.displayKnowledgeData = displayKnowledgeData;
+window.deleteKnowledgeItem = deleteKnowledgeItem;
+window.displayKnowledgeByDropdown = displayKnowledgeByDropdown;

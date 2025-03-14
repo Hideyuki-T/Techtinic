@@ -16,6 +16,24 @@ const urlsToCache = [
     '/offline.html',
 ];
 
+// タイムアウト付き fetch 関数（デフォルトは5000ms）
+function fetchWithTimeout(request, timeout = 5000) {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(new Error('Request timed out'));
+        }, timeout);
+        fetch(request)
+            .then(response => {
+                clearTimeout(timer);
+                resolve(response);
+            })
+            .catch(error => {
+                clearTimeout(timer);
+                reject(error);
+            });
+    });
+}
+
 // インストール時にキャッシュを作成
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -51,7 +69,8 @@ self.addEventListener('fetch', (event) => {
                     console.error("リクエストボディ読み込みエラー:", e);
                 }
                 try {
-                    return await fetch(event.request);
+                    // タイムアウト付き fetch を利用
+                    return await fetchWithTimeout(event.request, 5000);
                 } catch (error) {
                     console.error('通常の fetch でエラー発生:', error);
                     return await handleOfflineChatWithBody(reqBodyText);
@@ -62,7 +81,7 @@ self.addEventListener('fetch', (event) => {
     }
 
     event.respondWith(
-        fetch(event.request)
+        fetchWithTimeout(event.request, 5000)
             .then((networkResponse) => {
                 // ネットワークから取得できたのでキャッシュを更新
                 const responseClone = networkResponse.clone();
@@ -99,7 +118,7 @@ async function handleOfflineChatWithBody(reqText) {
         }
         const userInput = reqData.message || '';
 
-        // IndexedDBへ接続 (修正: openDB を直接呼び出す)
+        // IndexedDBへ接続 (openDB を直接呼び出す)
         let db;
         try {
             db = await openDB('techtinic-db', 1, {

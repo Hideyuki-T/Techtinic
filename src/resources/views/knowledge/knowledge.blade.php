@@ -3,7 +3,7 @@
 @section('title', 'キャッシュされた知識一覧 - Techtinic')
 
 @section('content')
-    <h1>キャッシュされた知識一覧</h1>
+    <h1>IndexedDB</h1>
 
     {{-- IndexedDB 同期状態を示すインジケータ、初期状態では非表示（display:none）--}}
     <div id="indexeddb-status" style="display:none; background: #dff0d8; color: #3c763d; padding: 10px; text-align: center; margin-bottom: 10px;">

@@ -96,6 +96,7 @@ async function getKnowledgeData() {
 }
 
 // UI に IndexedDB のデータを反映する関数
+// IndexedDB から知識データを取得し、<div id="knowledge-list"> に対して DOM 操作を行って各知識項目を表示
 async function displayKnowledgeData() {
     try {
         const data = await getKnowledgeData();
@@ -103,15 +104,37 @@ async function displayKnowledgeData() {
         if (listDiv) {
             listDiv.innerHTML = '';
             if (data.length === 0) {
-                listDiv.innerHTML = '<p>キャッシュされた知識はありません。</p>';
+                listDiv.innerHTML = '<p>何もキャッシュされてないよ。\(￣ー￣)/</p>';
                 return;
             }
             data.forEach(item => {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'knowledge-item';
-                itemDiv.innerHTML = `<strong>${item.title}</strong>: ${item.content}`;
+
+                // カテゴリー情報の作成（存在する場合）
+                let categoriesHTML = '';
+                if (item.categories && item.categories.length > 0) {
+                    const categoryNames = item.categories.map(cat => cat.name).join(', ');
+                    categoriesHTML = `<span class="categories">categories:【${categoryNames}】</span>`;
+                }
+
+                // タグ情報の作成（存在する場合）
+                let tagsHTML = '';
+                if (item.tags && item.tags.length > 0) {
+                    const tagNames = item.tags.map(tag => tag.name).join(', ');
+                    tagsHTML = `<div class="tags"><small>tags:[${tagNames}]</small></div>`;
+                }
+
+                // 各要素をブロック要素で囲んで改行表示する
+                itemDiv.innerHTML = `
+                <div class="categories">${categoriesHTML}</div>
+                <div class="title"><strong>title:${item.title}</strong></div>
+                <div class="content">content:${item.content}</div>
+                ${tagsHTML}
+                `;
                 listDiv.appendChild(itemDiv);
             });
+
         }
     } catch (error) {
         console.error("知識データの表示に失敗しました:", error);

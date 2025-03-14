@@ -95,8 +95,8 @@ button {
 /* 淡くかわいいパステルグラデーション背景 */
 body {
     background: linear-gradient(45deg, #f8cdda, #fceabb, #cfd9df);
-    background-size: 600% 600%;
-    animation: gradientAnimation 20s ease infinite;
+    background-size: 400% 400%;
+    animation: gradientAnimation 30s ease-in-out infinite;
     color: #333; /* 文字色を濃いグレーにして読みやすく */
 }
 
@@ -109,15 +109,19 @@ body {
         background-position: 100% 50%;
     }
     100% {
-        background-position: 0% 100%;
+        background-position: 0% 50%;
     }
 }
 
 
-/* スマホ向けのレスポンシブ調整（画面幅600px以下） */
+/* スマホ向けのレスポンシブ調整（画面幅600px以下で） */
 @media screen and (max-width: 600px) {
     body {
         padding: 10px;
+        background: linear-gradient(45deg, #f8cdda, #fceabb, #cfd9df);
+        background-size: 400% 400%;
+        animation: gradientAnimation 30s ease-in-out infinite;
+        color: #333;
     }
 
     #chat-box {
@@ -136,20 +140,12 @@ body {
         font-size: 18px;
     }
 
-    /* ボタンやリンクもタッチしやすいサイズにする */
+    /* ボタンやリンクもタッチしやすいサイズに */
     .btn, .option-btn {
         padding: 12px;
         font-size: 18px;
     }
-    /* 淡くかわいいパステルグラデーション背景 */
-    body {
-        background: linear-gradient(45deg, #f8cdda, #fceabb, #cfd9df);
-        background-size: 600% 600%;
-        animation: gradientAnimation 20s ease infinite;
-        color: #333; /* 文字色を濃いグレーにして読みやすく */
-    }
 
-    /* グラデーションアニメーション */
     @keyframes gradientAnimation {
         0% {
             background-position: 0% 50%;
@@ -158,8 +154,7 @@ body {
             background-position: 100% 50%;
         }
         100% {
-            background-position: 0% 100%;
+            background-position: 0% 50%;
         }
     }
-
 }

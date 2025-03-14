@@ -121,22 +121,18 @@ async function deleteKnowledgeItem(id) {
     await displayKnowledgeData();
 }
 
-// ソート（並び替え）用関数：昇順 or 降順に並び替える
-function sortByTimestamp(data, order = 'asc') {
-    return data.sort((a, b) => {
-        const timeA = new Date(a.created_at).getTime();
-        const timeB = new Date(b.created_at).getTime();
-        return order === 'asc' ? timeA - timeB : timeB - timeA;
-    });
-}
+// --- ページネーション用の定数 ---
+const ITEMS_PER_PAGE = 10;
 
-// UI に IndexedDB のデータを一覧表示する関数（ソート機能付き）
+// UI に IndexedDB のデータを一覧表示する関数（ソート・ページネーション対応）
 async function displayKnowledgeData() {
     try {
         let data = await getKnowledgeData();
         const listDiv = document.getElementById('knowledge-list');
         if (listDiv) {
+            // 完全にクリア
             listDiv.innerHTML = '';
+
             if (data.length === 0) {
                 listDiv.innerHTML = '<p>何もキャッシュされてないよ。\(￣ー￣)/</p>';
                 return;
@@ -154,26 +150,65 @@ async function displayKnowledgeData() {
             descOption.textContent = '降順';
             sortSelect.appendChild(ascOption);
             sortSelect.appendChild(descOption);
-
-            // ソートセレクトボックス変更時のイベント
-            sortSelect.addEventListener('change', () => {
-                data = sortByTimestamp(data, sortSelect.value);
-                renderList(data);
-            });
-
             listDiv.appendChild(sortSelect);
+
+            // アイテム表示用のコンテナを作成（これにより重複表示を防止）
+            let itemsContainer = document.createElement('div');
+            itemsContainer.id = 'itemsContainer';
+            listDiv.appendChild(itemsContainer);
 
             // 初期ソート（昇順）
             data = sortByTimestamp(data, 'asc');
 
-            // データ表示用のレンダリング関数
-            function renderList(dataArray) {
-                // 既存の表示部分（ソートセレクト以外）をクリア
-                // sortSelectは listDiv の最初の子要素とする
-                while (listDiv.childNodes.length > 1) {
-                    listDiv.removeChild(listDiv.lastChild);
+            let currentPage = 1;
+            const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
+
+            // ページネーションコントロールの作成
+            function renderPaginationControls() {
+                let paginationDiv = document.getElementById('pagination');
+                if (!paginationDiv) {
+                    paginationDiv = document.createElement('div');
+                    paginationDiv.id = 'pagination';
+                    paginationDiv.style.marginTop = '10px';
+                    listDiv.appendChild(paginationDiv);
                 }
-                dataArray.forEach(item => {
+                paginationDiv.innerHTML = '';
+
+                const prevBtn = document.createElement('button');
+                prevBtn.textContent = '前へ';
+                prevBtn.disabled = currentPage === 1;
+                prevBtn.addEventListener('click', () => {
+                    if (currentPage > 1) {
+                        currentPage--;
+                        renderList(data);
+                        renderPaginationControls();
+                    }
+                });
+                paginationDiv.appendChild(prevBtn);
+
+                const pageInfo = document.createElement('span');
+                pageInfo.textContent = ` ${currentPage} / ${totalPages} `;
+                paginationDiv.appendChild(pageInfo);
+
+                const nextBtn = document.createElement('button');
+                nextBtn.textContent = '次へ';
+                nextBtn.disabled = currentPage === totalPages;
+                nextBtn.addEventListener('click', () => {
+                    if (currentPage < totalPages) {
+                        currentPage++;
+                        renderList(data);
+                        renderPaginationControls();
+                    }
+                });
+                paginationDiv.appendChild(nextBtn);
+            }
+
+            // アイテムのレンダリング関数
+            function renderList(dataArray) {
+                itemsContainer.innerHTML = '';
+                const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+                const pageItems = dataArray.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+                pageItems.forEach(item => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'knowledge-item';
 
@@ -203,19 +238,36 @@ async function displayKnowledgeData() {
                             <button onclick="deleteKnowledgeItem(${item.id})">削除</button>
                         </div>
                     `;
-                    listDiv.appendChild(itemDiv);
+                    itemsContainer.appendChild(itemDiv);
                 });
             }
 
-            // 初回レンダリング
+            // ソート変更時のイベント
+            sortSelect.addEventListener('change', () => {
+                data = sortByTimestamp(data, sortSelect.value);
+                currentPage = 1;
+                renderList(data);
+                renderPaginationControls();
+            });
+
             renderList(data);
+            renderPaginationControls();
         }
     } catch (error) {
         console.error("知識データの表示に失敗しました:", error);
     }
 }
 
-// カテゴリー選択用プルダウンで表示する関数（ソート機能付き）
+// ソート関数（作成日時順に昇順・降順で並び替え）
+function sortByTimestamp(dataArray, order = 'asc') {
+    return dataArray.sort((a, b) => {
+        const timeA = new Date(a.created_at).getTime();
+        const timeB = new Date(b.created_at).getTime();
+        return order === 'asc' ? timeA - timeB : timeB - timeA;
+    });
+}
+
+// カテゴリー選択用プルダウンで表示する関数（ソート・ページネーション対応）
 async function displayKnowledgeByDropdown() {
     try {
         let data = await getKnowledgeData();
@@ -255,7 +307,7 @@ async function displayKnowledgeByDropdown() {
             allOption.textContent = 'すべて表示';
             selectEl.appendChild(allOption);
 
-            // グループ化された各カテゴリーをオプションとして追加
+            // 各カテゴリーオプションを追加
             for (const category in categoryGroups) {
                 const option = document.createElement('option');
                 option.value = category;
@@ -265,7 +317,7 @@ async function displayKnowledgeByDropdown() {
 
             listDiv.appendChild(selectEl);
 
-            // ソート用セレクトボックスを作成（作成日時順）
+            // ソート用セレクトボックス作成（作成日時順）
             const sortSelect = document.createElement('select');
             sortSelect.id = 'dropdownSortSelect';
             sortSelect.style.marginBottom = '10px';
@@ -284,30 +336,78 @@ async function displayKnowledgeByDropdown() {
             itemsContainer.id = 'itemsContainer';
             listDiv.appendChild(itemsContainer);
 
-            // 選択されたカテゴリーに応じてアイテムを表示する関数
+            // ページネーション変数
+            const ITEMS_PER_PAGE = 10;
+            let currentPage = 1;
+
+            // 選択されたカテゴリーに応じてアイテムを表示する関数（ページネーション対応）
             function displayItems(selectedCategory, sortOrder) {
-                itemsContainer.innerHTML = '';
                 let itemsToDisplay;
                 if (selectedCategory === 'all') {
                     itemsToDisplay = data;
                 } else {
                     itemsToDisplay = categoryGroups[selectedCategory] || [];
                 }
-                // ソート適用（作成日時に基づく）
                 itemsToDisplay = sortByTimestamp(itemsToDisplay, sortOrder);
-                itemsToDisplay.forEach(item => {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'knowledge-item';
-                    const timestampHTML = item.created_at
-                        ? `<div class="timestamp">作成日時: ${new Date(item.created_at).toLocaleString()}</div>`
-                        : '';
-                    itemDiv.innerHTML = `
-                        <div class="title"><strong>title: ${item.title}</strong></div>
-                        <div class="content">content:<br>${item.content.replace(/\n/g, '<br>')}</div>
-                        ${timestampHTML}
-                    `;
-                    itemsContainer.appendChild(itemDiv);
-                });
+                const totalPages = Math.ceil(itemsToDisplay.length / ITEMS_PER_PAGE);
+                currentPage = 1;
+
+                function renderItems() {
+                    itemsContainer.innerHTML = '';
+                    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+                    const pageItems = itemsToDisplay.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+                    pageItems.forEach(item => {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'knowledge-item';
+                        const timestampHTML = item.created_at
+                            ? `<div class="timestamp">作成日時: ${new Date(item.created_at).toLocaleString()}</div>`
+                            : '';
+                        itemDiv.innerHTML = `
+                            <div class="title"><strong>title: ${item.title}</strong></div>
+                            <div class="content">content:<br>${item.content.replace(/\n/g, '<br>')}</div>
+                            ${timestampHTML}
+                        `;
+                        itemsContainer.appendChild(itemDiv);
+                    });
+
+                    // ページネーションコントロール
+                    let paginationDiv = document.getElementById('dropdownPagination');
+                    if (!paginationDiv) {
+                        paginationDiv = document.createElement('div');
+                        paginationDiv.id = 'dropdownPagination';
+                        paginationDiv.style.marginTop = '10px';
+                        itemsContainer.parentNode.appendChild(paginationDiv);
+                    }
+                    paginationDiv.innerHTML = '';
+
+                    const prevBtn = document.createElement('button');
+                    prevBtn.textContent = '前へ';
+                    prevBtn.disabled = currentPage === 1;
+                    prevBtn.addEventListener('click', () => {
+                        if (currentPage > 1) {
+                            currentPage--;
+                            renderItems();
+                        }
+                    });
+                    paginationDiv.appendChild(prevBtn);
+
+                    const pageInfo = document.createElement('span');
+                    pageInfo.textContent = ` ${currentPage} / ${totalPages} `;
+                    paginationDiv.appendChild(pageInfo);
+
+                    const nextBtn = document.createElement('button');
+                    nextBtn.textContent = '次へ';
+                    nextBtn.disabled = currentPage === totalPages;
+                    nextBtn.addEventListener('click', () => {
+                        if (currentPage < totalPages) {
+                            currentPage++;
+                            renderItems();
+                        }
+                    });
+                    paginationDiv.appendChild(nextBtn);
+                }
+
+                renderItems();
             }
 
             // 初期表示は「すべて表示」と昇順

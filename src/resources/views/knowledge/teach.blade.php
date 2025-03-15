@@ -7,7 +7,7 @@
         <a href="/chat" class="btn">チャット画面に戻る</a>
     </div>
 
-    <h1>Techtinic に知識を教える</h1>
+    <h1>情報の登録</h1>
 
     @if(session('success'))
         <div class="alert">
@@ -47,6 +47,6 @@
             <input type="text" name="new_tags" id="new_tags" placeholder="例: docker, コンテナ, 状態確認">
         </div>
 
-        <button type="submit">知識を登録する</button>
+        <button type="submit">登録する</button>
     </form>
 @endsection

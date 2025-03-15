@@ -57,6 +57,12 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+    // GET以外のリクエストはキャッシュ対象にしない
+    if (event.request.method !== 'GET') {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
     const url = new URL(event.request.url);
 
     if (url.pathname.startsWith('/api/chat')) {
@@ -66,13 +72,13 @@ self.addEventListener('fetch', (event) => {
                 try {
                     reqBodyText = await event.request.clone().text();
                 } catch (e) {
-                    console.error("リクエストボディ読み込みエラー:", e);
+                    console.error("リクエストボディの読み込みでエラーだよ:", e);
                 }
                 try {
                     // タイムアウト付き fetch を利用
                     return await fetchWithTimeout(event.request, 5000);
                 } catch (error) {
-                    console.error('通常の fetch でエラー発生:', error);
+                    console.error('通常の fetch でエラー発生だよ。。:', error);
                     return await handleOfflineChatWithBody(reqBodyText);
                 }
             })()
@@ -131,7 +137,7 @@ async function handleOfflineChatWithBody(reqText) {
         } catch (e) {
             console.error("IndexedDB接続エラー:", e);
             return new Response(JSON.stringify({
-                response: "オフラインなので応答できませんでした。（DB接続エラー）",
+                response: "オフラインなので応答できません。( ;ㅿ; )（DB接続エラー）",
                 mode: 'default',
                 offline: true
             }), { headers: { 'Content-Type': 'application/json' } });
@@ -146,7 +152,7 @@ async function handleOfflineChatWithBody(reqText) {
         } catch (e) {
             console.error("データ取得エラー:", e);
             return new Response(JSON.stringify({
-                response: "オフラインなので応答できませんでした。（DB取得エラー）",
+                response: "オフラインなので応答できません。( ;ㅿ; )（DB取得エラー）",
                 mode: 'default',
                 offline: true
             }), { headers: { 'Content-Type': 'application/json' } });
@@ -161,7 +167,7 @@ async function handleOfflineChatWithBody(reqText) {
         let responseData;
         if (matched.length === 0) {
             responseData = {
-                response: "それについてはまだ知らないや。",
+                response: "それについてはまだ知らないや...( ˘•ω•˘ ).｡oஇ",
                 mode: 'default',
                 offline: true
             };
@@ -173,7 +179,7 @@ async function handleOfflineChatWithBody(reqText) {
             };
         } else {
             responseData = {
-                response: "以下の情報が見つかったよ。どれか選んで！",
+                response: "以下の情報が見つかったよ！(´∇｀)どれか選んで！",
                 mode: 'selection',
                 options: matched.map(item => item.title),
                 offline: true
@@ -186,7 +192,7 @@ async function handleOfflineChatWithBody(reqText) {
     } catch (error) {
         console.error('handleOfflineChat 内のエラー:', error);
         return new Response(JSON.stringify({
-            response: "オフラインなので応答できませんでした。（内部エラー）",
+            response: "オフラインなので応答できません。( ;ㅿ; )（内部エラー）",
             mode: 'default',
             offline: true
         }), {

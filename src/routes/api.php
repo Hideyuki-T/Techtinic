@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatController;
 use App\Models\Knowledge;
 use App\Services\SystemStatusService;
+use App\Http\Controllers\KnowledgeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -12,8 +13,9 @@ use App\Services\SystemStatusService;
 |--------------------------------------------------------------------------
 |
 | ここでは、API ルートを定義します。これらのルートは自動的に "/api"
-| プレフィックスが付与されますので、たとえば、"/sync" と定義すると、
-| 外部からは "http://{ホスト}:ポート/api/sync" でアクセス可能です。
+| プレフィックスが付与されます。
+| なので、たとえば、"/sync" と定義すると、
+| 外部からは "http://{ホスト}:ポート/api/sync" でアクセス可能。
 |
 */
 
@@ -30,6 +32,9 @@ Route::get('/sync', function () {
     $knowledgeData = Knowledge::with(['categories', 'tags'])->get();
     return response()->json(['knowledge' => $knowledgeData]);
 });
+
+// 知識データ削除用のエンドポイントを追加
+Route::delete('/knowledge/{id}', [KnowledgeController::class, 'destroy']);
 
 // API で環境変数を取得するエンドポイント
 Route::get('/config', function () {

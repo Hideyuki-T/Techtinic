@@ -57,6 +57,12 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+    // GET以外のリクエストはキャッシュ対象にしない
+    if (event.request.method !== 'GET') {
+        event.respondWith(fetch(event.request));
+        return;
+    }
+
     const url = new URL(event.request.url);
 
     if (url.pathname.startsWith('/api/chat')) {

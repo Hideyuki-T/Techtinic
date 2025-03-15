@@ -129,7 +129,6 @@ async function getKnowledgeData() {
 }
 
 // 登録されている知識情報を削除する関数（指定した id のアイテムを削除）
-// 登録されている知識情報を削除する関数（指定した id のアイテムを削除）
 async function deleteKnowledgeItem(id) {
     if (!confirm("本当に削除しても良いかな？")) {
         return;
@@ -137,7 +136,7 @@ async function deleteKnowledgeItem(id) {
 
     try {
         // サーバー側の削除APIを呼び出す
-        const deleteUrl = `/knowledge/${id}`; // ルーティングに合わせて調整する
+        const deleteUrl = `/api/knowledge/${id}`; // ルート定義に合わせる
         const response = await fetch(deleteUrl, {
             method: 'DELETE',
             headers: {
@@ -148,7 +147,7 @@ async function deleteKnowledgeItem(id) {
 
         if (response.ok) {
             console.log("サーバー上で削除成功:", result);
-            // サーバーでの削除が成功したら、IndexedDBからも削除するよ！
+            // サーバーでの削除が成功したら、IndexedDBからも削除する
             const db = await initDB();
             const tx = db.transaction('knowledge', 'readwrite');
             await tx.objectStore('knowledge').delete(id);
@@ -162,6 +161,7 @@ async function deleteKnowledgeItem(id) {
         console.error("削除処理中にエラーが発生したよ:", error);
     }
 }
+
 
 
 // --- ページネーション用の定数 ---

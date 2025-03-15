@@ -15,7 +15,7 @@
         <a href="/teach" class="btn">Knowledge Registration</a>
     </div>
 
-    <h1>Techtinic Chat</h1>
+    <h1>Chat T</h1>
     <div id="chat-box">
         <!-- チャット履歴がここに表示される -->
     </div>

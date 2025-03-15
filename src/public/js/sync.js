@@ -17,6 +17,25 @@ function fetchWithTimeout(resource, options = {}) {
     ]);
 }
 
+// 追加: サーバーのオンライン状態をチェックする関数
+async function checkServerOnlineStatus() {
+    const statusEndpoint = '/api/system/status';
+    try {
+        const response = await Promise.race([
+            fetchWithTimeout(statusEndpoint, { timeout: 10000 }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('タイムアウト')), 10000))
+        ]);
+        if (!response.headers.get('Content-Type')?.includes('application/json')) {
+            throw new Error("Invalid response format");
+        }
+        const data = await response.json();
+        return data.online; // true か false を返す
+    } catch (error) {
+        console.error("オンライン状態チェック失敗:", error);
+        return false; // エラー時はオフラインとみなす
+    }
+}
+
 // IP アドレス取得用の関数（Laravel の /api/config から取得）
 // APIから正しい値が得られない場合は、window.location.hostname を使用する
 async function getSyncServerIP() {
@@ -32,9 +51,10 @@ async function getSyncServerIP() {
     return window.location.hostname;
 }
 
-// DOMContentLoaded 時にオンラインなら同期処理、オフラインならスキップ
+// DOMContentLoaded 時にサーバーのオンライン状態をチェックし、オンラインなら同期処理を開始する
 document.addEventListener("DOMContentLoaded", async () => {
-    if (navigator.onLine) {
+    const serverOnline = await checkServerOnlineStatus();
+    if (serverOnline) {
         console.log("Online: 同期処理を開始します。");
         await syncDataFromPC();
     } else {
@@ -109,17 +129,40 @@ async function getKnowledgeData() {
 }
 
 // 登録されている知識情報を削除する関数（指定した id のアイテムを削除）
+// 登録されている知識情報を削除する関数（指定した id のアイテムを削除）
 async function deleteKnowledgeItem(id) {
     if (!confirm("本当に削除しても良いかな？")) {
         return;
     }
-    const db = await initDB();
-    const tx = db.transaction('knowledge', 'readwrite');
-    await tx.objectStore('knowledge').delete(id);
-    await tx.done;
-    console.log("知識情報を削除したよ。id:", id);
-    await displayKnowledgeData();
+
+    try {
+        // サーバー側の削除APIを呼び出す
+        const deleteUrl = `/knowledge/${id}`; // ルーティングに合わせて調整する
+        const response = await fetch(deleteUrl, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        const result = await response.json();
+
+        if (response.ok) {
+            console.log("サーバー上で削除成功:", result);
+            // サーバーでの削除が成功したら、IndexedDBからも削除するよ！
+            const db = await initDB();
+            const tx = db.transaction('knowledge', 'readwrite');
+            await tx.objectStore('knowledge').delete(id);
+            await tx.done;
+            console.log("IndexedDBからも削除したよ。id:", id);
+            await displayKnowledgeData();
+        } else {
+            console.error("サーバー側で削除に失敗だよ:", result);
+        }
+    } catch (error) {
+        console.error("削除処理中にエラーが発生したよ:", error);
+    }
 }
+
 
 // --- ページネーション用の定数 ---
 const ITEMS_PER_PAGE = 10;
@@ -225,7 +268,7 @@ async function displayKnowledgeData() {
                     }
 
                     const timestampHTML = item.created_at
-                        ? `<div class="timestamp">作成日時: ${new Date(item.created_at).toLocaleString()}</div>`
+                        ? `<div class="timestamp">timestamp: ${new Date(item.created_at).toLocaleString()}</div>`
                         : '';
 
                     itemDiv.innerHTML = `

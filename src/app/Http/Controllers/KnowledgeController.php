@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Knowledge;
 use App\Models\Category;
 use App\Models\Tag;
+use App\Services\SystemStatusService;
 
 class KnowledgeController extends Controller
 {
@@ -61,6 +62,23 @@ class KnowledgeController extends Controller
             }
         }
 
-        return redirect('/teach')->with('success', '知識が登録されました！');
+        return redirect('/teach')->with('success', '登録されました！');
+    }
+
+    public function destroy(Request $request, $id)
+    {
+        // オンライン状態かどうかのチェック
+        if (!SystemStatusService::isOnline()) {
+            return response()->json([
+                'error' => '今は、オフラインなので削除処理を実行できません。'
+            ], 403);
+        }
+
+        $knowledge = Knowledge::findOrFail($id);
+        $knowledge->delete(); // ソフトデリート実施
+
+        return response()->json([
+            'success' => '知識情報をソフトデリートしたよ。'
+        ]);
     }
 }

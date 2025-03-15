@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChatController;
 use App\Models\Knowledge;
+use App\Services\SystemStatusService;
 
 /*
 |--------------------------------------------------------------------------
@@ -34,5 +35,12 @@ Route::get('/sync', function () {
 Route::get('/config', function () {
     return response()->json([
         'sync_server_ip' => env('SYNC_SERVER_IP', 'localhost'),
+    ]);
+});
+
+//個のエンドポイントは SystemStatusService::isOnline() の結果を JSON で返す。
+Route::get('/system/status', function () {
+    return response()->json([
+        'online' => SystemStatusService::isOnline(),
     ]);
 });

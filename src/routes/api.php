@@ -6,6 +6,7 @@ use App\Http\Controllers\ChatController;
 use App\Models\Knowledge;
 use App\Services\SystemStatusService;
 use App\Http\Controllers\KnowledgeController;
+use App\Models\Tag;
 
 /*
 |--------------------------------------------------------------------------
@@ -35,6 +36,15 @@ Route::get('/sync', function () {
 
 // 知識データ削除用のエンドポイントを追加
 Route::delete('/knowledge/{id}', [KnowledgeController::class, 'destroy']);
+// 知識データ更新用のエンドポイントを追加
+Route::put('/knowledge/{id}', [KnowledgeController::class, 'update']);
+
+// タグの一覧を取得するエンドポイント
+Route::get('/tags', function () {
+    return response()->json(Tag::all());
+});
+//タグ削除用のエンドポイント
+Route::delete('/tags/{id}', [KnowledgeController::class, 'destroyTag']);
 
 // API で環境変数を取得するエンドポイント
 Route::get('/config', function () {

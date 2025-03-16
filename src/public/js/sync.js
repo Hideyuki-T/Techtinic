@@ -51,6 +51,49 @@ async function getSyncServerIP() {
     return window.location.hostname;
 }
 
+// CSS を動的に読み込む関数を定義（グローバルに公開）
+function loadPopupCSS() {
+    if (!document.getElementById('popup-css')) {
+        // document.head が存在しない場合は document.body に追加
+        const head = document.head || document.getElementsByTagName('head')[0] || document.body;
+        const link = document.createElement('link');
+        link.id = 'popup-css';
+        link.rel = 'stylesheet';
+        link.href = 'css/popup.css';
+        head.appendChild(link);
+    }
+}
+window.loadPopupCSS = loadPopupCSS;
+
+// タグ削除用の関数（グローバルに公開）
+async function deleteTag(tagId) {
+    if (!confirm("本当にこのタグを削除してよろしいですか？")) {
+        return;
+    }
+    try {
+        const deleteUrl = `/api/tags/${tagId}`;
+        const response = await fetch(deleteUrl, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        const result = await response.json();
+        if (response.ok) {
+            alert("タグが削除されました。");
+            // タグ削除後は、再度タグ一覧を取得するためにページリロード（または再描画処理）する
+            location.reload();
+        } else {
+            console.error("タグ削除に失敗:", result);
+            alert("タグ削除に失敗しました。");
+        }
+    } catch (error) {
+        console.error("タグ削除中にエラーが発生しました:", error);
+        alert("タグ削除中にエラーが発生しました。");
+    }
+}
+window.deleteTag = deleteTag;
+
 // DOMContentLoaded 時にサーバーのオンライン状態をチェックし、オンラインなら同期処理を開始する
 document.addEventListener("DOMContentLoaded", async () => {
     const serverOnline = await checkServerOnlineStatus();
@@ -128,12 +171,11 @@ async function getKnowledgeData() {
     return allItems;
 }
 
-// 登録されている知識情報を削除する関数（指定した id のアイテムを削除）
+// 削除機能：登録されている知識情報を削除する関数（指定した id のアイテムを削除）
 async function deleteKnowledgeItem(id) {
     if (!confirm("本当に削除しても良いかな？")) {
         return;
     }
-
     try {
         // サーバー側の削除APIを呼び出す
         const deleteUrl = `/api/knowledge/${id}`; // ルート定義に合わせる
@@ -144,7 +186,6 @@ async function deleteKnowledgeItem(id) {
             }
         });
         const result = await response.json();
-
         if (response.ok) {
             console.log("サーバー上で削除成功:", result);
             // サーバーでの削除が成功したら、IndexedDBからも削除する
@@ -162,26 +203,181 @@ async function deleteKnowledgeItem(id) {
     }
 }
 
+// 既存タグ一覧を取得する関数
+async function getExistingTags() {
+    try {
+        const response = await fetch('/api/tags'); // API エンドポイントが /api/tags と仮定
+        return await response.json(); // 例：[{id:1, name:"docker"}, ...]
+    } catch (error) {
+        console.error("既存タグの取得に失敗:", error);
+        return [];
+    }
+}
 
+// 編集機能：編集はオンライン時のみ可能
+function editKnowledgeItem(id) {
+    if (!navigator.onLine) {
+        alert("編集はオンライン時のみ利用可能です。");
+        return;
+    }
+    openEditForm(id);
+}
 
-// --- ページネーション用の定数 ---
+// 編集フォームを動的に生成して表示する関数【修正版だYO！】
+async function openEditForm(id) {
+    // CSS を読み込む
+    loadPopupCSS();
+
+    const db = await initDB();
+    const tx = db.transaction('knowledge', 'readonly');
+    const store = tx.objectStore('knowledge');
+    const item = await store.get(id);
+    if (!item) {
+        alert("該当データが見つかりません。");
+        return;
+    }
+    // 既存タグのチェックボックス＋削除ボタンHTML生成
+    const existingTags = await getExistingTags();
+    let checkboxesHtml = '';
+    existingTags.forEach(tag => {
+        let checked = (item.tags && item.tags.some(t => t.id == tag.id)) ? 'checked' : '';
+        checkboxesHtml += `
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <label style="flex:1; padding: 2px 5px;">
+                    <input type="checkbox" name="existing_tags[]" value="${tag.id}" ${checked}>
+                    ${tag.name}
+                </label>
+                <button type="button" onclick="deleteTag(${tag.id})" style="margin-left:5px;">削除</button>
+            </div>
+        `;
+    });
+    // HTML構造を組み立て
+    const formHtml = `
+        <div id="editFormContainer">
+            <h3>知識情報の編集</h3>
+            <form onsubmit="submitEdit(event, ${id})">
+                <div class="form-group">
+                    <label for="editCategory">カテゴリー</label>
+                    <input type="text" name="category" id="editCategory" value="${ item.category || (item.categories ? item.categories.map(cat => cat.name).join(', ') : '') }" placeholder="例: dockerコマンド" required>
+                </div>
+                <div class="form-group">
+                    <label for="editTitle">タイトル</label>
+                    <input type="text" name="title" id="editTitle" value="${item.title}" placeholder="例: 起動済のコンテナ一覧の表示" required>
+                </div>
+                <div class="form-group">
+                    <label for="editContent">本文</label>
+                    <textarea name="content" id="editContent" rows="4" placeholder="例: docker ps と入力して、起動中のコンテナ一覧を表示する" required>${item.content}</textarea>
+                </div>
+                <div class="form-group">
+                    <label>既存のタグから選択 (複数選択可)</label>
+                    <div class="dropdown" style="position: relative; display: inline-block; width:100%;">
+                        <button type="button" id="dropdownButton" onclick="toggleDropdown()">タグを選択</button>
+                        <div id="dropdownMenu" style="display: none; position: absolute; background: #fff; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 1000; max-height:200px; overflow-y:auto; width:100%;">
+                            ${checkboxesHtml}
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editNewTags">新しいタグ (カンマ区切りで入力)</label>
+                    <input type="text" name="new_tags" id="editNewTags" placeholder="例: docker, コンテナ, 状態確認">
+                </div>
+                <button type="submit">更新する</button>
+                <button type="button" onclick="closeEditForm()">キャンセル</button>
+            </form>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', formHtml);
+}
+
+// プルダウンの表示/非表示を切り替える関数（グローバルに公開）
+function toggleDropdown() {
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    if (dropdownMenu.style.display === 'none' || dropdownMenu.style.display === '') {
+        dropdownMenu.style.display = 'block';
+    } else {
+        dropdownMenu.style.display = 'none';
+    }
+}
+window.toggleDropdown = toggleDropdown;
+
+// 編集フォームを閉じる関数
+function closeEditForm() {
+    const container = document.getElementById('editFormContainer');
+    if (container) {
+        container.remove();
+    }
+}
+
+// 編集内容をオンラインで更新する関数（フォーム送信時に呼ばれる）
+async function submitEdit(event, id) {
+    event.preventDefault();
+    const newCategory = document.getElementById('editCategory').value.trim();
+    const newTitle = document.getElementById('editTitle').value.trim();
+    const newContent = document.getElementById('editContent').value.trim();
+    const existingTagsElements = document.querySelectorAll('input[name="existing_tags[]"]:checked');
+    let existingTags = [];
+    existingTagsElements.forEach(el => {
+        existingTags.push(el.value);
+    });
+    const newTags = document.getElementById('editNewTags').value.trim();
+    if (!newCategory || !newTitle || !newContent) {
+        alert("カテゴリー、タイトル、本文は必須です。");
+        return;
+    }
+    try {
+        // オンライン編集の場合、サーバー側の更新API（PUT）に送信
+        const updateUrl = `/api/knowledge/${id}`;
+        const response = await fetch(updateUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                category: newCategory,
+                title: newTitle,
+                content: newContent,
+                existing_tags: existingTags,
+                new_tags: newTags
+            })
+        });
+        const result = await response.json();
+        if (response.ok) {
+            console.log("サーバー上で更新成功:", result);
+            // サーバー更新成功後、IndexedDBも更新（任意）
+            const db = await initDB();
+            const tx = db.transaction('knowledge', 'readwrite');
+            let item = await tx.objectStore('knowledge').get(id);
+            if (item) {
+                item.category = newCategory;
+                item.title = newTitle;
+                item.content = newContent;
+                await tx.objectStore('knowledge').put(item);
+            }
+            await tx.done;
+            alert("編集が完了しました。");
+            closeEditForm();
+            await displayKnowledgeData();
+        } else {
+            console.error("サーバー側で更新に失敗:", result);
+        }
+    } catch (error) {
+        console.error("更新処理中にエラーが発生:", error);
+    }
+}
+
 const ITEMS_PER_PAGE = 10;
 
-// UI に IndexedDB のデータを一覧表示する関数（ソート・ページネーション対応）
 async function displayKnowledgeData() {
     try {
         let data = await getKnowledgeData();
         const listDiv = document.getElementById('knowledge-list');
         if (listDiv) {
-            // 完全にクリア
             listDiv.innerHTML = '';
-
             if (data.length === 0) {
                 listDiv.innerHTML = '<p>何もキャッシュされてないよ。\(￣ー￣)/</p>';
                 return;
             }
-
-            // ソート用セレクトボックスを作成
             const sortSelect = document.createElement('select');
             sortSelect.id = 'sortSelect';
             sortSelect.style.marginBottom = '10px';
@@ -194,19 +390,12 @@ async function displayKnowledgeData() {
             sortSelect.appendChild(ascOption);
             sortSelect.appendChild(descOption);
             listDiv.appendChild(sortSelect);
-
-            // アイテム表示用のコンテナを作成（これにより重複表示を防止）
             let itemsContainer = document.createElement('div');
             itemsContainer.id = 'itemsContainer';
             listDiv.appendChild(itemsContainer);
-
-            // 初期ソート（昇順）
             data = sortByTimestamp(data, 'asc');
-
             let currentPage = 1;
             const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
-
-            // ページネーションコントロールの作成
             function renderPaginationControls() {
                 let paginationDiv = document.getElementById('pagination');
                 if (!paginationDiv) {
@@ -216,7 +405,6 @@ async function displayKnowledgeData() {
                     listDiv.appendChild(paginationDiv);
                 }
                 paginationDiv.innerHTML = '';
-
                 const prevBtn = document.createElement('button');
                 prevBtn.textContent = '前へ';
                 prevBtn.disabled = currentPage === 1;
@@ -228,11 +416,9 @@ async function displayKnowledgeData() {
                     }
                 });
                 paginationDiv.appendChild(prevBtn);
-
                 const pageInfo = document.createElement('span');
                 pageInfo.textContent = ` ${currentPage} / ${totalPages} `;
                 paginationDiv.appendChild(pageInfo);
-
                 const nextBtn = document.createElement('button');
                 nextBtn.textContent = '次へ';
                 nextBtn.disabled = currentPage === totalPages;
@@ -245,8 +431,6 @@ async function displayKnowledgeData() {
                 });
                 paginationDiv.appendChild(nextBtn);
             }
-
-            // アイテムのレンダリング関数
             function renderList(dataArray) {
                 itemsContainer.innerHTML = '';
                 const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -254,23 +438,19 @@ async function displayKnowledgeData() {
                 pageItems.forEach(item => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'knowledge-item';
-
                     let categoriesHTML = '';
                     if (item.categories && item.categories.length > 0) {
                         const categoryNames = item.categories.map(cat => cat.name).join(', ');
                         categoriesHTML = `<span class="categories">categories:【${categoryNames}】</span>`;
                     }
-
                     let tagsHTML = '';
                     if (item.tags && item.tags.length > 0) {
                         const tagNames = item.tags.map(tag => tag.name).join(', ');
                         tagsHTML = `<div class="tags"><small>tags:[${tagNames}]</small></div>`;
                     }
-
                     const timestampHTML = item.created_at
                         ? `<div class="timestamp">timestamp: ${new Date(item.created_at).toLocaleString()}</div>`
                         : '';
-
                     itemDiv.innerHTML = `
                         <div class="categories">${categoriesHTML}</div>
                         <div class="title"><strong>title: ${item.title}</strong></div>
@@ -278,21 +458,19 @@ async function displayKnowledgeData() {
                         ${tagsHTML}
                         ${timestampHTML}
                         <div class="actions">
+                            <button onclick="editKnowledgeItem(${item.id})">編集</button>
                             <button onclick="deleteKnowledgeItem(${item.id})">削除</button>
                         </div>
                     `;
                     itemsContainer.appendChild(itemDiv);
                 });
             }
-
-            // ソート変更時のイベント
             sortSelect.addEventListener('change', () => {
                 data = sortByTimestamp(data, sortSelect.value);
                 currentPage = 1;
                 renderList(data);
                 renderPaginationControls();
             });
-
             renderList(data);
             renderPaginationControls();
         }
@@ -301,7 +479,6 @@ async function displayKnowledgeData() {
     }
 }
 
-// ソート関数（作成日時順に昇順・降順で並び替え）
 function sortByTimestamp(dataArray, order = 'asc') {
     return dataArray.sort((a, b) => {
         const timeA = new Date(a.created_at).getTime();
@@ -310,7 +487,6 @@ function sortByTimestamp(dataArray, order = 'asc') {
     });
 }
 
-// カテゴリー選択用プルダウンで表示する関数（ソート・ページネーション対応）
 async function displayKnowledgeByDropdown() {
     try {
         let data = await getKnowledgeData();
@@ -321,7 +497,6 @@ async function displayKnowledgeByDropdown() {
                 listDiv.innerHTML = '<p>キャッシュされた知識はありません。</p>';
                 return;
             }
-            // グループ化：カテゴリーごとにデータをまとめる
             const categoryGroups = {};
             data.forEach(item => {
                 if (item.categories && item.categories.length > 0) {
@@ -338,29 +513,20 @@ async function displayKnowledgeByDropdown() {
                     categoryGroups["未分類"].push(item);
                 }
             });
-
-            // プルダウン（select要素）を作成
             const selectEl = document.createElement('select');
             selectEl.id = 'categorySelect';
             selectEl.style.marginBottom = '10px';
-
-            // 「すべて表示」オプション
             const allOption = document.createElement('option');
             allOption.value = 'all';
             allOption.textContent = 'すべて表示';
             selectEl.appendChild(allOption);
-
-            // 各カテゴリーオプションを追加
             for (const category in categoryGroups) {
                 const option = document.createElement('option');
                 option.value = category;
                 option.textContent = category;
                 selectEl.appendChild(option);
             }
-
             listDiv.appendChild(selectEl);
-
-            // ソート用セレクトボックス作成（作成日時順）
             const sortSelect = document.createElement('select');
             sortSelect.id = 'dropdownSortSelect';
             sortSelect.style.marginBottom = '10px';
@@ -373,17 +539,11 @@ async function displayKnowledgeByDropdown() {
             sortSelect.appendChild(ascOption);
             sortSelect.appendChild(descOption);
             listDiv.appendChild(sortSelect);
-
-            // アイテム表示用コンテナを作成
             const itemsContainer = document.createElement('div');
             itemsContainer.id = 'itemsContainer';
             listDiv.appendChild(itemsContainer);
-
-            // ページネーション変数
             const ITEMS_PER_PAGE = 10;
             let currentPage = 1;
-
-            // 選択されたカテゴリーに応じてアイテムを表示する関数（ページネーション対応）
             function displayItems(selectedCategory, sortOrder) {
                 let itemsToDisplay;
                 if (selectedCategory === 'all') {
@@ -394,7 +554,6 @@ async function displayKnowledgeByDropdown() {
                 itemsToDisplay = sortByTimestamp(itemsToDisplay, sortOrder);
                 const totalPages = Math.ceil(itemsToDisplay.length / ITEMS_PER_PAGE);
                 currentPage = 1;
-
                 function renderItems() {
                     itemsContainer.innerHTML = '';
                     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -412,8 +571,6 @@ async function displayKnowledgeByDropdown() {
                         `;
                         itemsContainer.appendChild(itemDiv);
                     });
-
-                    // ページネーションコントロール
                     let paginationDiv = document.getElementById('dropdownPagination');
                     if (!paginationDiv) {
                         paginationDiv = document.createElement('div');
@@ -422,7 +579,6 @@ async function displayKnowledgeByDropdown() {
                         itemsContainer.parentNode.appendChild(paginationDiv);
                     }
                     paginationDiv.innerHTML = '';
-
                     const prevBtn = document.createElement('button');
                     prevBtn.textContent = '前へ';
                     prevBtn.disabled = currentPage === 1;
@@ -433,11 +589,9 @@ async function displayKnowledgeByDropdown() {
                         }
                     });
                     paginationDiv.appendChild(prevBtn);
-
                     const pageInfo = document.createElement('span');
                     pageInfo.textContent = ` ${currentPage} / ${totalPages} `;
                     paginationDiv.appendChild(pageInfo);
-
                     const nextBtn = document.createElement('button');
                     nextBtn.textContent = '次へ';
                     nextBtn.disabled = currentPage === totalPages;
@@ -449,33 +603,30 @@ async function displayKnowledgeByDropdown() {
                     });
                     paginationDiv.appendChild(nextBtn);
                 }
-
                 renderItems();
             }
-
-            // 初期表示は「すべて表示」と昇順
             displayItems('all', 'asc');
-
-            // プルダウン変更時に表示を切り替え
             selectEl.addEventListener('change', function() {
                 displayItems(this.value, sortSelect.value);
             });
-
-            // ソートセレクト変更時に再表示
             sortSelect.addEventListener('change', function() {
                 displayItems(selectEl.value, this.value);
             });
         }
     } catch (error) {
-        console.error("知識データのプルダウン表示に失敗しました:", error);
+        console.error("知識データのプルダウン表示に失敗しました((汗:", error);
     }
 }
 
-// グローバルに関数を公開する（必要な場合）
 window.initDB = initDB;
 window.saveKnowledgeData = saveKnowledgeData;
 window.getKnowledgeData = getKnowledgeData;
 window.syncDataFromPC = syncDataFromPC;
 window.displayKnowledgeData = displayKnowledgeData;
 window.deleteKnowledgeItem = deleteKnowledgeItem;
+window.editKnowledgeItem = editKnowledgeItem;
 window.displayKnowledgeByDropdown = displayKnowledgeByDropdown;
+window.openEditForm = openEditForm;
+window.closeEditForm = closeEditForm;
+window.submitEdit = submitEdit;
+window.toggleDropdown = toggleDropdown;

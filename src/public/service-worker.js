@@ -1,3 +1,4 @@
+// service-worker.js
 import { openDB } from '/js/idb.min.js';
 
 const CACHE_NAME = 'techtinic-cache-v1';
@@ -56,15 +57,11 @@ self.addEventListener('install', (event) => {
     );
 });
 
+// fetch イベントの処理
 self.addEventListener('fetch', (event) => {
-    // GET以外のリクエストはキャッシュ対象にしない
-    if (event.request.method !== 'GET') {
-        event.respondWith(fetch(event.request));
-        return;
-    }
-
     const url = new URL(event.request.url);
 
+    // /api/chat へのリクエストは IndexedDB を利用してチャット処理を行う
     if (url.pathname.startsWith('/api/chat')) {
         event.respondWith(
             (async function() {
@@ -72,24 +69,23 @@ self.addEventListener('fetch', (event) => {
                 try {
                     reqBodyText = await event.request.clone().text();
                 } catch (e) {
-                    console.error("リクエストボディの読み込みでエラーだよ:", e);
+                    console.error("リクエストボディの読み込みでエラー:", e);
                 }
-                try {
-                    // タイムアウト付き fetch を利用
-                    return await fetchWithTimeout(event.request, 5000);
-                } catch (error) {
-                    console.error('通常の fetch でエラー発生だよ。。:', error);
-                    return await handleOfflineChatWithBody(reqBodyText);
-                }
+                return await handleChatMessage(reqBodyText);
             })()
         );
+        return;
+    }
+
+    // GET 以外はキャッシュ対象外
+    if (event.request.method !== 'GET') {
+        event.respondWith(fetch(event.request));
         return;
     }
 
     event.respondWith(
         fetchWithTimeout(event.request, 5000)
             .then((networkResponse) => {
-                // ネットワークから取得できたのでキャッシュを更新
                 const responseClone = networkResponse.clone();
                 caches.open(CACHE_NAME).then((cache) => {
                     cache.put(event.request, responseClone);
@@ -111,97 +107,76 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-// オフライン時のチャット応答処理
-async function handleOfflineChatWithBody(reqText) {
-    console.log("handleOfflineChatWithBody: reqText =", reqText);
-    try {
-        let reqData = {};
-        try {
-            reqData = JSON.parse(reqText);
-            console.log("Parsed reqData:", reqData);
-        } catch (e) {
-            console.error("JSONパースエラー:", e);
+// IndexedDB の初期化（バージョン2に統一）
+async function initDB() {
+    const db = await openDB('techtinic-db', 2, {
+        upgrade(db, oldVersion, newVersion, transaction) {
+            if (!db.objectStoreNames.contains('knowledge')) {
+                const store = db.createObjectStore('knowledge', { keyPath: 'id', autoIncrement: true });
+                store.createIndex('title', 'title', { unique: false });
+            }
+            if (!db.objectStoreNames.contains('chatMessages')) {
+                db.createObjectStore('chatMessages', { keyPath: 'id', autoIncrement: true });
+            }
         }
-        const userInput = reqData.message || '';
-
-        // IndexedDBへ接続 (openDB を直接呼び出す)
-        let db;
-        try {
-            db = await openDB('techtinic-db', 1, {
-                upgrade(db) {
-                    if (!db.objectStoreNames.contains('knowledge')) {
-                        db.createObjectStore('knowledge', { keyPath: 'id', autoIncrement: true });
-                    }
-                }
-            });
-        } catch (e) {
-            console.error("IndexedDB接続エラー:", e);
-            return new Response(JSON.stringify({
-                response: "オフラインなので応答できません。( ;ㅿ; )（DB接続エラー）",
-                mode: 'default',
-                offline: true
-            }), { headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // DBから 'knowledge' ストアの全レコードを取得
-        let allRecords = [];
-        try {
-            const tx = db.transaction('knowledge', 'readonly');
-            const store = tx.objectStore('knowledge');
-            allRecords = await store.getAll();
-        } catch (e) {
-            console.error("データ取得エラー:", e);
-            return new Response(JSON.stringify({
-                response: "オフラインなので応答できません。( ;ㅿ; )（DB取得エラー）",
-                mode: 'default',
-                offline: true
-            }), { headers: { 'Content-Type': 'application/json' } });
-        }
-
-        // ユーザー入力に基づいて候補をフィルタリング
-        const matched = allRecords.filter(item =>
-            item.title.toLowerCase().includes(userInput.toLowerCase()) ||
-            item.content.toLowerCase().includes(userInput.toLowerCase())
-        );
-
-        let responseData;
-        if (matched.length === 0) {
-            responseData = {
-                response: "それについてはまだ知らないや...( ˘•ω•˘ ).｡oஇ",
-                mode: 'default',
-                offline: true
-            };
-        } else if (matched.length === 1) {
-            responseData = {
-                response: `確か...「${matched[0].title}」の内容はこうだったよ!\n${matched[0].content}`,
-                mode: 'default',
-                offline: true
-            };
-        } else {
-            responseData = {
-                response: "以下の情報が見つかったよ！(´∇｀)どれか選んで！",
-                mode: 'selection',
-                options: matched.map(item => item.title),
-                offline: true
-            };
-        }
-
-        return new Response(JSON.stringify(responseData), {
-            headers: { 'Content-Type': 'application/json' }
-        });
-    } catch (error) {
-        console.error('handleOfflineChat 内のエラー:', error);
-        return new Response(JSON.stringify({
-            response: "オフラインなので応答できません。( ;ㅿ; )（内部エラー）",
-            mode: 'default',
-            offline: true
-        }), {
-            headers: { 'Content-Type': 'application/json' }
-        });
-    }
+    });
+    return db;
 }
 
-// アクティベート時に古いキャッシュを削除
+// チャットリクエストの処理（IndexedDB を利用）
+async function handleChatMessage(reqText) {
+    console.log("handleChatMessage: reqText =", reqText);
+    let reqData = {};
+    try {
+        reqData = JSON.parse(reqText);
+        console.log("Parsed reqData:", reqData);
+    } catch (e) {
+        console.error("JSONパースエラー:", e);
+    }
+    const userInput = reqData.message || '';
+
+    let db;
+    try {
+        db = await initDB();
+    } catch (e) {
+        console.error("IndexedDB接続エラー:", e);
+        return new Response(JSON.stringify({
+            response: "IndexedDB 接続エラーです。",
+            offline: true
+        }), { headers: { 'Content-Type': 'application/json' } });
+    }
+
+    try {
+        const tx = db.transaction('chatMessages', 'readwrite');
+        const store = tx.objectStore('chatMessages');
+        const chatMessage = { message: userInput, timestamp: Date.now() };
+        await store.add(chatMessage);
+        await tx.done;
+        console.log("チャットメッセージを IndexedDB に保存しました。", chatMessage);
+    } catch (e) {
+        console.error("チャットメッセージ保存エラー:", e);
+    }
+
+    let allMessages = [];
+    try {
+        const tx = db.transaction('chatMessages', 'readonly');
+        const store = tx.objectStore('chatMessages');
+        allMessages = await store.getAll();
+    } catch (e) {
+        console.error("チャットメッセージ取得エラー:", e);
+    }
+
+    const responseData = {
+        response: "チャットメッセージ一覧です。",
+        messages: allMessages,
+        offline: true
+    };
+
+    return new Response(JSON.stringify(responseData), {
+        headers: { 'Content-Type': 'application/json' }
+    });
+}
+
 self.addEventListener('activate', (event) => {
     const cacheWhitelist = [CACHE_NAME];
     event.waitUntil(

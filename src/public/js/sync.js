@@ -1,14 +1,19 @@
 // sync.js をモジュールとして読み込みます
 import { openDB } from '/js/idb.min.js';
-// 必要に応じてグローバルに公開（オプション）
 window.idb = { openDB };
 
 console.log("sync.js loaded");
 console.log("window.idb:", window.idb);
 
-// タイムアウト用のヘルパー関数（タイムアウトを10秒に延長）
+// グローバル定数
+const ITEMS_PER_PAGE = 10;
+window.ITEMS_PER_PAGE = ITEMS_PER_PAGE;
+
+/*--------------------------------------
+  共通のヘルパー関数
+--------------------------------------*/
 function fetchWithTimeout(resource, options = {}) {
-    const { timeout = 10000 } = options;  // 10秒に設定
+    const { timeout = 10000 } = options; // 10秒に設定
     return Promise.race([
         fetch(resource, options),
         new Promise((_, reject) =>
@@ -17,27 +22,26 @@ function fetchWithTimeout(resource, options = {}) {
     ]);
 }
 
-// 追加: サーバーのオンライン状態をチェックする関数
 async function checkServerOnlineStatus() {
     const statusEndpoint = '/api/system/status';
     try {
         const response = await Promise.race([
             fetchWithTimeout(statusEndpoint, { timeout: 10000 }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('タイムアウト')), 10000))
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('タイムアウト')), 10000)
+            )
         ]);
         if (!response.headers.get('Content-Type')?.includes('application/json')) {
             throw new Error("Invalid response format");
         }
         const data = await response.json();
-        return data.online; // true か false を返す
+        return data.online;
     } catch (error) {
         console.error("オンライン状態チェック失敗:", error);
-        return false; // エラー時はオフラインとみなす
+        return false;
     }
 }
 
-// IP アドレス取得用の関数（Laravel の /api/config から取得）
-// APIから正しい値が得られない場合は、window.location.hostname を使用する
 async function getSyncServerIP() {
     try {
         let response = await fetchWithTimeout("/api/config", { timeout: 10000 });
@@ -51,10 +55,8 @@ async function getSyncServerIP() {
     return window.location.hostname;
 }
 
-// CSS を動的に読み込む関数を定義（グローバルに公開）
 function loadPopupCSS() {
     if (!document.getElementById('popup-css')) {
-        // document.head が存在しない場合は document.body に追加
         const head = document.head || document.getElementsByTagName('head')[0] || document.body;
         const link = document.createElement('link');
         link.id = 'popup-css';
@@ -65,7 +67,39 @@ function loadPopupCSS() {
 }
 window.loadPopupCSS = loadPopupCSS;
 
-// タグ削除用の関数（グローバルに公開）
+/*--------------------------------------
+  IndexedDB 初期化（バージョン2に統一）
+--------------------------------------*/
+async function initDB() {
+    const db = await openDB('techtinic-db', 2, {
+        upgrade(db, oldVersion, newVersion, transaction) {
+            if (!db.objectStoreNames.contains('knowledge')) {
+                const store = db.createObjectStore('knowledge', { keyPath: 'id', autoIncrement: true });
+                store.createIndex('title', 'title', { unique: false });
+            }
+            if (!db.objectStoreNames.contains('chatMessages')) {
+                db.createObjectStore('chatMessages', { keyPath: 'id', autoIncrement: true });
+            }
+        }
+    });
+    return db;
+}
+window.initDB = initDB;
+
+/*--------------------------------------
+  タグ取得／削除
+--------------------------------------*/
+async function getExistingTags() {
+    try {
+        const response = await fetch('/api/tags');
+        return await response.json();
+    } catch (error) {
+        console.error("既存タグの取得に失敗:", error);
+        return [];
+    }
+}
+window.getExistingTags = getExistingTags;
+
 async function deleteTag(tagId) {
     if (!confirm("本当にこのタグを削除してよろしいですか？")) {
         return;
@@ -74,14 +108,11 @@ async function deleteTag(tagId) {
         const deleteUrl = `/api/tags/${tagId}`;
         const response = await fetch(deleteUrl, {
             method: 'DELETE',
-            headers: {
-                'Accept': 'application/json'
-            }
+            headers: { 'Accept': 'application/json' }
         });
         const result = await response.json();
         if (response.ok) {
             alert("タグが削除されました。");
-            // タグ削除後は、再度タグ一覧を取得するためにページリロード（または再描画処理）する
             location.reload();
         } else {
             console.error("タグ削除に失敗:", result);
@@ -94,64 +125,92 @@ async function deleteTag(tagId) {
 }
 window.deleteTag = deleteTag;
 
-// DOMContentLoaded 時にサーバーのオンライン状態をチェックし、オンラインなら同期処理を開始する
-document.addEventListener("DOMContentLoaded", async () => {
-    const serverOnline = await checkServerOnlineStatus();
-    if (serverOnline) {
-        console.log("Online: 同期処理を開始します。");
-        await syncDataFromPC();
-    } else {
-        console.log("Offline: 同期処理はスキップします。");
-    }
-    // 初期表示は一覧表示
-    await displayKnowledgeData();
+/*--------------------------------------
+  チャット機能 (IndexedDBのみ)
+--------------------------------------*/
+// IndexedDB にメッセージを保存
+async function saveChatMessage(message) {
+    const db = await initDB();
+    const tx = db.transaction('chatMessages', 'readwrite');
+    await tx.objectStore('chatMessages').add({ message, timestamp: Date.now() });
+    await tx.done;
+    console.log("チャットメッセージが IndexedDB に保存されました。");
+}
 
-    // 表示切替用ボタンのイベントリスナー設定
-    const listViewBtn = document.getElementById('listViewBtn');
-    const categoryViewBtn = document.getElementById('categoryViewBtn');
-    if (listViewBtn && categoryViewBtn) {
-        listViewBtn.addEventListener('click', async () => {
-            await displayKnowledgeData();
-        });
-        categoryViewBtn.addEventListener('click', async () => {
-            await displayKnowledgeByDropdown();
+// IndexedDB から全チャットメッセージを取得
+async function getChatMessages() {
+    const db = await initDB();
+    return await db.getAll('chatMessages');
+}
+
+// UI 更新関数
+function updateChatUI(messages) {
+    const chatList = document.getElementById('chat-list');
+    if (chatList) {
+        chatList.innerHTML = '';
+        messages.sort((a, b) => a.timestamp - b.timestamp);
+        messages.forEach(msg => {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'chat-message';
+            msgDiv.textContent = `${new Date(msg.timestamp).toLocaleTimeString()}: ${msg.message}`;
+            chatList.appendChild(msgDiv);
         });
     }
-});
+}
+window.updateChatUI = updateChatUI;
 
+// displayChatMessages: IndexedDBからメッセージを取得してUI更新するラッパー
+async function displayChatMessages() {
+    const messages = await getChatMessages();
+    updateChatUI(messages);
+}
+window.displayChatMessages = displayChatMessages;
+
+// チャット送信処理：IndexedDB に保存して UI 更新
+async function sendChatMessage(message) {
+    try {
+        await saveChatMessage(message);
+        const messages = await getChatMessages();
+        updateChatUI(messages);
+    } catch (error) {
+        console.error("チャットメッセージ送信エラー:", error);
+    }
+}
+window.sendChatMessage = sendChatMessage;
+
+/*--------------------------------------
+  同期処理（サーバーとIndexedDBの同期）
+--------------------------------------*/
 async function syncDataFromPC() {
     const hostname = window.location.hostname;
     console.log("使用するホスト名:", hostname);
-    // 絶対URLを組み立てる（ポート番号が必要な場合は適宜調整）
+    console.log("同期処理開始");
     let syncUrl = `https://${hostname}:8080/api/sync`;
-    fetchWithTimeout(syncUrl, { timeout: 10000 })
-        .then(response => {
-            if (!response.headers.get('Content-Type')?.includes('application/json')) {
-                return Promise.reject(new Error("JSON 形式ではありません"));
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log("同期データ取得:", data);
-            saveKnowledgeData(data);
-        })
-        .catch(error => console.error("同期失敗:", error));
+    try {
+        const response = await fetchWithTimeout(syncUrl, { timeout: 10000 });
+        if (!response.headers.get('Content-Type')?.includes('application/json')) {
+            throw new Error("JSON 形式ではありません");
+        }
+        const data = await response.json();
+        console.log("同期データ取得:", data);
+        await saveKnowledgeData(data);
+        console.log("同期完了");
+        onIndexedDbSynchronized();
+    } catch (error) {
+        console.error("同期失敗:", error);
+    }
 }
+window.syncDataFromPC = syncDataFromPC;
 
-// IndexedDB の初期化関数
-async function initDB() {
-    const db = await openDB('techtinic-db', 1, {
-        upgrade(db) {
-            if (!db.objectStoreNames.contains('knowledge')) {
-                const store = db.createObjectStore('knowledge', { keyPath: 'id', autoIncrement: true });
-                store.createIndex('title', 'title', { unique: false });
-            }
-        },
-    });
-    return db;
+/*--------------------------------------
+  知識データ処理（オンライン連携用）
+--------------------------------------*/
+async function getKnowledgeData() {
+    const db = await initDB();
+    return await db.getAll('knowledge');
 }
+window.getKnowledgeData = getKnowledgeData;
 
-// データ保存用の関数
 async function saveKnowledgeData(data) {
     const db = await initDB();
     const tx = db.transaction('knowledge', 'readwrite');
@@ -163,210 +222,7 @@ async function saveKnowledgeData(data) {
     await tx.done;
     console.log("IndexedDBへの保存が完了しました。");
 }
-
-// データ取得用の関数
-async function getKnowledgeData() {
-    const db = await initDB();
-    const allItems = await db.getAll('knowledge');
-    return allItems;
-}
-
-// 削除機能：登録されている知識情報を削除する関数（指定した id のアイテムを削除）
-async function deleteKnowledgeItem(id) {
-    if (!confirm("本当に削除しても良いかな？")) {
-        return;
-    }
-    try {
-        // サーバー側の削除APIを呼び出す
-        const deleteUrl = `/api/knowledge/${id}`; // ルート定義に合わせる
-        const response = await fetch(deleteUrl, {
-            method: 'DELETE',
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        const result = await response.json();
-        if (response.ok) {
-            console.log("サーバー上で削除成功:", result);
-            // サーバーでの削除が成功したら、IndexedDBからも削除する
-            const db = await initDB();
-            const tx = db.transaction('knowledge', 'readwrite');
-            await tx.objectStore('knowledge').delete(id);
-            await tx.done;
-            console.log("IndexedDBからも削除したよ。id:", id);
-            await displayKnowledgeData();
-        } else {
-            console.error("サーバー側で削除に失敗だよ:", result);
-        }
-    } catch (error) {
-        console.error("削除処理中にエラーが発生したよ:", error);
-    }
-}
-
-// 既存タグ一覧を取得する関数
-async function getExistingTags() {
-    try {
-        const response = await fetch('/api/tags'); // API エンドポイントが /api/tags と仮定
-        return await response.json(); // 例：[{id:1, name:"docker"}, ...]
-    } catch (error) {
-        console.error("既存タグの取得に失敗:", error);
-        return [];
-    }
-}
-
-// 編集機能：編集はオンライン時のみ可能
-function editKnowledgeItem(id) {
-    if (!navigator.onLine) {
-        alert("編集はオンライン時のみ利用可能です。");
-        return;
-    }
-    openEditForm(id);
-}
-
-// 編集フォームを動的に生成して表示する関数【修正版だYO！】
-async function openEditForm(id) {
-    // CSS を読み込む
-    loadPopupCSS();
-
-    const db = await initDB();
-    const tx = db.transaction('knowledge', 'readonly');
-    const store = tx.objectStore('knowledge');
-    const item = await store.get(id);
-    if (!item) {
-        alert("該当データが見つかりません。");
-        return;
-    }
-    // 既存タグのチェックボックス＋削除ボタンHTML生成
-    const existingTags = await getExistingTags();
-    let checkboxesHtml = '';
-    existingTags.forEach(tag => {
-        let checked = (item.tags && item.tags.some(t => t.id == tag.id)) ? 'checked' : '';
-        checkboxesHtml += `
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <label style="flex:1; padding: 2px 5px;">
-                    <input type="checkbox" name="existing_tags[]" value="${tag.id}" ${checked}>
-                    ${tag.name}
-                </label>
-                <button type="button" onclick="deleteTag(${tag.id})" style="margin-left:5px;">削除</button>
-            </div>
-        `;
-    });
-    // HTML構造を組み立て
-    const formHtml = `
-        <div id="editFormContainer">
-            <h3>知識情報の編集</h3>
-            <form onsubmit="submitEdit(event, ${id})">
-                <div class="form-group">
-                    <label for="editCategory">カテゴリー</label>
-                    <input type="text" name="category" id="editCategory" value="${ item.category || (item.categories ? item.categories.map(cat => cat.name).join(', ') : '') }" placeholder="例: dockerコマンド" required>
-                </div>
-                <div class="form-group">
-                    <label for="editTitle">タイトル</label>
-                    <input type="text" name="title" id="editTitle" value="${item.title}" placeholder="例: 起動済のコンテナ一覧の表示" required>
-                </div>
-                <div class="form-group">
-                    <label for="editContent">本文</label>
-                    <textarea name="content" id="editContent" rows="4" placeholder="例: docker ps と入力して、起動中のコンテナ一覧を表示する" required>${item.content}</textarea>
-                </div>
-                <div class="form-group">
-                    <label>既存のタグから選択 (複数選択可)</label>
-                    <div class="dropdown" style="position: relative; display: inline-block; width:100%;">
-                        <button type="button" id="dropdownButton" onclick="toggleDropdown()">タグを選択</button>
-                        <div id="dropdownMenu" style="display: none; position: absolute; background: #fff; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 1000; max-height:200px; overflow-y:auto; width:100%;">
-                            ${checkboxesHtml}
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="editNewTags">新しいタグ (カンマ区切りで入力)</label>
-                    <input type="text" name="new_tags" id="editNewTags" placeholder="例: docker, コンテナ, 状態確認">
-                </div>
-                <button type="submit">更新する</button>
-                <button type="button" onclick="closeEditForm()">キャンセル</button>
-            </form>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', formHtml);
-}
-
-// プルダウンの表示/非表示を切り替える関数（グローバルに公開）
-function toggleDropdown() {
-    const dropdownMenu = document.getElementById('dropdownMenu');
-    if (dropdownMenu.style.display === 'none' || dropdownMenu.style.display === '') {
-        dropdownMenu.style.display = 'block';
-    } else {
-        dropdownMenu.style.display = 'none';
-    }
-}
-window.toggleDropdown = toggleDropdown;
-
-// 編集フォームを閉じる関数
-function closeEditForm() {
-    const container = document.getElementById('editFormContainer');
-    if (container) {
-        container.remove();
-    }
-}
-
-// 編集内容をオンラインで更新する関数（フォーム送信時に呼ばれる）
-async function submitEdit(event, id) {
-    event.preventDefault();
-    const newCategory = document.getElementById('editCategory').value.trim();
-    const newTitle = document.getElementById('editTitle').value.trim();
-    const newContent = document.getElementById('editContent').value.trim();
-    const existingTagsElements = document.querySelectorAll('input[name="existing_tags[]"]:checked');
-    let existingTags = [];
-    existingTagsElements.forEach(el => {
-        existingTags.push(el.value);
-    });
-    const newTags = document.getElementById('editNewTags').value.trim();
-    if (!newCategory || !newTitle || !newContent) {
-        alert("カテゴリー、タイトル、本文は必須です。");
-        return;
-    }
-    try {
-        // オンライン編集の場合、サーバー側の更新API（PUT）に送信
-        const updateUrl = `/api/knowledge/${id}`;
-        const response = await fetch(updateUrl, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                category: newCategory,
-                title: newTitle,
-                content: newContent,
-                existing_tags: existingTags,
-                new_tags: newTags
-            })
-        });
-        const result = await response.json();
-        if (response.ok) {
-            console.log("サーバー上で更新成功:", result);
-            // サーバー更新成功後、IndexedDBも更新（任意）
-            const db = await initDB();
-            const tx = db.transaction('knowledge', 'readwrite');
-            let item = await tx.objectStore('knowledge').get(id);
-            if (item) {
-                item.category = newCategory;
-                item.title = newTitle;
-                item.content = newContent;
-                await tx.objectStore('knowledge').put(item);
-            }
-            await tx.done;
-            alert("編集が完了しました。");
-            closeEditForm();
-            await displayKnowledgeData();
-        } else {
-            console.error("サーバー側で更新に失敗:", result);
-        }
-    } catch (error) {
-        console.error("更新処理中にエラーが発生:", error);
-    }
-}
-
-const ITEMS_PER_PAGE = 10;
+window.saveKnowledgeData = saveKnowledgeData;
 
 async function displayKnowledgeData() {
     try {
@@ -452,16 +308,16 @@ async function displayKnowledgeData() {
                         ? `<div class="timestamp">timestamp: ${new Date(item.created_at).toLocaleString()}</div>`
                         : '';
                     itemDiv.innerHTML = `
-                        <div class="categories">${categoriesHTML}</div>
-                        <div class="title"><strong>title: ${item.title}</strong></div>
-                        <div class="content">content:<br>${item.content.replace(/\n/g, '<br>')}</div>
-                        ${tagsHTML}
-                        ${timestampHTML}
-                        <div class="actions">
-                            <button onclick="editKnowledgeItem(${item.id})">編集</button>
-                            <button onclick="deleteKnowledgeItem(${item.id})">削除</button>
-                        </div>
-                    `;
+            <div class="categories">${categoriesHTML}</div>
+            <div class="title"><strong>title: ${item.title}</strong></div>
+            <div class="content">content:<br>${item.content.replace(/\n/g, '<br>')}</div>
+            ${tagsHTML}
+            ${timestampHTML}
+            <div class="actions">
+              <button onclick="editKnowledgeItem(${item.id})">編集</button>
+              <button onclick="deleteKnowledgeItem(${item.id})">削除</button>
+            </div>
+          `;
                     itemsContainer.appendChild(itemDiv);
                 });
             }
@@ -478,6 +334,7 @@ async function displayKnowledgeData() {
         console.error("知識データの表示に失敗しました:", error);
     }
 }
+window.displayKnowledgeData = displayKnowledgeData;
 
 function sortByTimestamp(dataArray, order = 'asc') {
     return dataArray.sort((a, b) => {
@@ -542,7 +399,6 @@ async function displayKnowledgeByDropdown() {
             const itemsContainer = document.createElement('div');
             itemsContainer.id = 'itemsContainer';
             listDiv.appendChild(itemsContainer);
-            const ITEMS_PER_PAGE = 10;
             let currentPage = 1;
             function displayItems(selectedCategory, sortOrder) {
                 let itemsToDisplay;
@@ -565,10 +421,10 @@ async function displayKnowledgeByDropdown() {
                             ? `<div class="timestamp">timestamp: ${new Date(item.created_at).toLocaleString()}</div>`
                             : '';
                         itemDiv.innerHTML = `
-                            <div class="title"><strong>title: ${item.title}</strong></div>
-                            <div class="content">content:<br>${item.content.replace(/\n/g, '<br>')}</div>
-                            ${timestampHTML}
-                        `;
+              <div class="title"><strong>title: ${item.title}</strong></div>
+              <div class="content">content:<br>${item.content.replace(/\n/g, '<br>')}</div>
+              ${timestampHTML}
+            `;
                         itemsContainer.appendChild(itemDiv);
                     });
                     let paginationDiv = document.getElementById('dropdownPagination');
@@ -617,16 +473,219 @@ async function displayKnowledgeByDropdown() {
         console.error("知識データのプルダウン表示に失敗しました((汗:", error);
     }
 }
-
-window.initDB = initDB;
-window.saveKnowledgeData = saveKnowledgeData;
-window.getKnowledgeData = getKnowledgeData;
-window.syncDataFromPC = syncDataFromPC;
-window.displayKnowledgeData = displayKnowledgeData;
-window.deleteKnowledgeItem = deleteKnowledgeItem;
-window.editKnowledgeItem = editKnowledgeItem;
 window.displayKnowledgeByDropdown = displayKnowledgeByDropdown;
+
+/*--------------------------------------
+  編集・削除関連（知識データ処理）
+--------------------------------------*/
+function editKnowledgeItem(id) {
+    if (!navigator.onLine) {
+        alert("編集はオンライン時のみ利用可能です。");
+        return;
+    }
+    openEditForm(id);
+}
+window.editKnowledgeItem = editKnowledgeItem;
+
+async function openEditForm(id) {
+    loadPopupCSS();
+    const db = await initDB();
+    const tx = db.transaction('knowledge', 'readonly');
+    const store = tx.objectStore('knowledge');
+    const item = await store.get(id);
+    if (!item) {
+        alert("該当データが見つかりません。");
+        return;
+    }
+    const existingTags = await getExistingTags();
+    let checkboxesHtml = '';
+    existingTags.forEach(tag => {
+        let checked = (item.tags && item.tags.some(t => t.id == tag.id)) ? 'checked' : '';
+        checkboxesHtml += `
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <label style="flex:1; padding: 2px 5px;">
+          <input type="checkbox" name="existing_tags[]" value="${tag.id}" ${checked}>
+          ${tag.name}
+        </label>
+        <button type="button" onclick="deleteTag(${tag.id})" style="margin-left:5px;">削除</button>
+      </div>
+    `;
+    });
+    const formHtml = `
+    <div id="editFormContainer">
+      <h3>知識情報の編集</h3>
+      <form onsubmit="submitEdit(event, ${id})">
+        <div class="form-group">
+          <label for="editCategory">カテゴリー</label>
+          <input type="text" name="category" id="editCategory" value="${ item.category || (item.categories ? item.categories.map(cat => cat.name).join(', ') : '') }" placeholder="例: dockerコマンド" required>
+        </div>
+        <div class="form-group">
+          <label for="editTitle">タイトル</label>
+          <input type="text" name="title" id="editTitle" value="${item.title}" placeholder="例: 起動済のコンテナ一覧の表示" required>
+        </div>
+        <div class="form-group">
+          <label for="editContent">本文</label>
+          <textarea name="content" id="editContent" rows="4" placeholder="例: docker ps と入力して、起動中のコンテナ一覧を表示する" required>${item.content}</textarea>
+        </div>
+        <div class="form-group">
+          <label>既存のタグから選択 (複数選択可)</label>
+          <div class="dropdown" style="position: relative; display: inline-block; width:100%;">
+            <button type="button" id="dropdownButton" onclick="toggleDropdown()">タグを選択</button>
+            <div id="dropdownMenu" style="display: none; position: absolute; background: #fff; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); z-index: 1000; max-height:200px; overflow-y:auto; width:100%;">
+              ${checkboxesHtml}
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="editNewTags">新しいタグ (カンマ区切りで入力)</label>
+          <input type="text" name="new_tags" id="editNewTags" placeholder="例: docker, コンテナ, 状態確認">
+        </div>
+        <button type="submit">更新する</button>
+        <button type="button" onclick="closeEditForm()">キャンセル</button>
+      </form>
+    </div>
+  `;
+    document.body.insertAdjacentHTML('beforeend', formHtml);
+}
 window.openEditForm = openEditForm;
+
+function toggleDropdown() {
+    const dropdownMenu = document.getElementById('dropdownMenu');
+    if (dropdownMenu.style.display === 'none' || dropdownMenu.style.display === '') {
+        dropdownMenu.style.display = 'block';
+    } else {
+        dropdownMenu.style.display = 'none';
+    }
+}
+window.toggleDropdown = toggleDropdown;
+
+function closeEditForm() {
+    const container = document.getElementById('editFormContainer');
+    if (container) {
+        container.remove();
+    }
+}
+window.closeEditForm = closeEditForm;
+
+async function submitEdit(event, id) {
+    event.preventDefault();
+    const newCategory = document.getElementById('editCategory').value.trim();
+    const newTitle = document.getElementById('editTitle').value.trim();
+    const newContent = document.getElementById('editContent').value.trim();
+    const existingTagsElements = document.querySelectorAll('input[name="existing_tags[]"]:checked');
+    let existingTags = [];
+    existingTagsElements.forEach(el => {
+        existingTags.push(el.value);
+    });
+    const newTags = document.getElementById('editNewTags').value.trim();
+    if (!newCategory || !newTitle || !newContent) {
+        alert("カテゴリー、タイトル、本文は必須です。");
+        return;
+    }
+    try {
+        const updateUrl = `/api/knowledge/${id}`;
+        const response = await fetch(updateUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                category: newCategory,
+                title: newTitle,
+                content: newContent,
+                existing_tags: existingTags,
+                new_tags: newTags
+            })
+        });
+        const result = await response.json();
+        if (response.ok) {
+            console.log("サーバー上で更新成功:", result);
+            const db = await initDB();
+            const tx = db.transaction('knowledge', 'readwrite');
+            let item = await tx.objectStore('knowledge').get(id);
+            if (item) {
+                item.category = newCategory;
+                item.title = newTitle;
+                item.content = newContent;
+                await tx.objectStore('knowledge').put(item);
+            }
+            await tx.done;
+            alert("編集が完了しました。");
+            closeEditForm();
+            await displayKnowledgeData();
+        } else {
+            console.error("サーバー側で更新に失敗:", result);
+        }
+    } catch (error) {
+        console.error("更新処理中にエラーが発生:", error);
+    }
+}
+window.submitEdit = submitEdit;
+
+/*--------------------------------------
+  DOMContentLoaded の初期処理
+--------------------------------------*/
+document.addEventListener("DOMContentLoaded", async () => {
+    // 知識データの表示
+    await displayKnowledgeData();
+    // チャットメッセージの初回表示
+    await displayChatMessages();
+
+    // チャット送信ボタンの設定
+    const chatSendBtn = document.getElementById('chat-send-btn');
+    const chatInput = document.getElementById('chat-input');
+    if (chatSendBtn && chatInput) {
+        chatSendBtn.addEventListener('click', async () => {
+            const message = chatInput.value.trim();
+            if (message) {
+                await sendChatMessage(message);
+                chatInput.value = '';
+            }
+        });
+    }
+
+    // 知識データ表示切替用ボタンの設定
+    const listViewBtn = document.getElementById('listViewBtn');
+    const categoryViewBtn = document.getElementById('categoryViewBtn');
+    if (listViewBtn && categoryViewBtn) {
+        listViewBtn.addEventListener('click', async () => {
+            await displayKnowledgeData();
+        });
+        categoryViewBtn.addEventListener('click', async () => {
+            await displayKnowledgeByDropdown();
+        });
+    }
+
+    // オンラインの場合、同期処理を開始する
+    const serverOnline = await checkServerOnlineStatus();
+    if (serverOnline) {
+        console.log("Online: 同期処理を開始します。");
+        await syncDataFromPC();
+    } else {
+        console.log("Offline: 同期処理はスキップします。");
+    }
+});
+
+// 最後に必要な関数をグローバルに登録
+window.saveKnowledgeData = saveKnowledgeData;
+window.getExistingTags = getExistingTags;
+window.editKnowledgeItem = editKnowledgeItem;
+window.openEditForm = openEditForm;
+window.toggleDropdown = toggleDropdown;
 window.closeEditForm = closeEditForm;
 window.submitEdit = submitEdit;
-window.toggleDropdown = toggleDropdown;
+window.displayKnowledgeData = displayKnowledgeData;
+window.displayKnowledgeByDropdown = displayKnowledgeByDropdown;
+
+/*--------------------------------------
+  同期完了時のインジケータ更新用関数
+--------------------------------------*/
+function onIndexedDbSynchronized() {
+    const statusEl = document.getElementById('indexeddb-status');
+    if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.innerText = 'Data Synchronized';
+    }
+}
+window.onIndexedDbSynchronized = onIndexedDbSynchronized;

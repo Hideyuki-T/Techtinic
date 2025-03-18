@@ -17,6 +17,22 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+//全ての始まりページ
 Route::get('/main', function () {
     return view('main.index');
+});
+
+//TechtinicChat用のページ
+Route::get('/chat', function () {
+    return view('chat.index');
+});
+
+//Game用のページ
+Route::get('/game', function () {
+    return view('game.index');
+});
+
+//ECサイト用のページ
+Route::get('/ec', function () {
+    return view('ec.index');
 });

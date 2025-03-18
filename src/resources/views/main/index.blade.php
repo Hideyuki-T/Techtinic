@@ -11,12 +11,12 @@
     <meta name="theme-color" content="#317EFB">
 </head>
 <body>
-
 <h1>Welcome to My Projects</h1>
+<header id="quote-header">ここに名言が表示されるんだよ</header>
 <div class="container">
     <div class="card">
         <h2>CHAT</h2>
-        <p>対話形式メモ帳<br>↓<br>サービスワーカー＆IndexedDB</p>
+        <p>対話形式メモ帳<br>↓<br>IndexedDB</p>
         <a href="{{ url('/chat') }}">Go to Chat</a>
     </div>
     <div class="card">
@@ -32,7 +32,7 @@
 </div>
 
 <!-- アプリインストール用ボタン -->
-<button id="installBtn" style="display: none;">アプリをインストール</button>
+<button id="installBtn" style="display: none;">インストール！</button>
 
 <script>
     // インストールプロンプト制御用
@@ -69,6 +69,37 @@
             });
     }
 </script>
+<script>
+    // quotes.jsonから名言のリストを取得する関数
+    async function fetchQuotes() {
+        try {
+            const response = await fetch('/quotes.json');
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Error fetching quotes:', error);
+            return [];
+        }
+    }
 
+    // ランダムな名言をヘッダーに表示する関数
+    function displayRandomQuote(quotes) {
+        if (quotes.length === 0) return;
+        const randomIndex = Math.floor(Math.random() * quotes.length);
+        document.getElementById('quote-header').textContent = quotes[randomIndex];
+    }
+
+    // 名言を取得して、5秒ごとに更新
+    fetchQuotes().then(quotes => {
+        // 初回表示
+        displayRandomQuote(quotes);
+        // 5秒ごとに名言を更新
+        setInterval(() => {
+            displayRandomQuote(quotes);
+        }, 8000);
+    });
+</script>
 </body>
 </html>

@@ -2,7 +2,12 @@ const CACHE_NAME = 'CSTE-cache-v1';
 const urlsToCache = [
     '/',
     '/main',
-    '/css/mainPageStyles.css'
+    '/chat',
+    '/ec',
+    '/css/mainPageStyles.css',
+    '/quotes.json',
+    '/images/icon_192x192.png',
+    '/images/icon_512x512.png'
     // 必要に応じて他のリソースも追加
 ];
 

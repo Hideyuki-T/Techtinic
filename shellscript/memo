@@ -1,9 +1,0 @@
-===エラ-メッセージ===
-bad interpreter: /bin/bash^M: no such file or directory
-------------------
-LinuxやmacOSでは LF（\n） のみが改行として扱われるため、Windowsの改行（CRLF）が含まれているとシェルが解釈できず、このエラーになる。
-解決策：dos2unixコマンドを使って改行コードを変換する。
-1:which dos2unixでインストール確認
-1-1:見つからない場合：[Ubuntu/Debian]→sudo apt install dos2unix
-1-2:見つからない場合：[Mac（Homebrew）]→brew install dos2unix
-2:スクリプトの改行を修正する：dos2unix ＜ShellScript名＞

@@ -1,0 +1,28 @@
+/* popup.css */
+#editFormContainer {
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #fff;
+    padding: 20px;
+    z-index: 1000;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    max-width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* ボタンや入力フォームの共通スタイル */
+#editFormContainer input[type="text"],
+#editFormContainer textarea {
+    width: 100%;
+}
+
+/* スマホ向けの調整 */
+@media (max-width: 600px) {
+    #editFormContainer {
+        top: 5%;
+        padding: 15px;
+    }
+}

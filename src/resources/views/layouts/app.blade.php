@@ -29,7 +29,7 @@
     </script>
     @yield('head')
 </head>
-<body>
+<body class="@yield('body-class')">
 <div id="app">
     @yield('content')
     <button id="installButton" style="display: none;">アプリをインストール</button>

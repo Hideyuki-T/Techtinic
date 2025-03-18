@@ -1,7 +1,14 @@
-/* 共通のスタイル */
+/* =======================
+   共通のスタイル
+======================= */
+/* フォントやマージン、背景（パステルグラデーション） */
 body {
     font-family: sans-serif;
     margin: 20px;
+    background: linear-gradient(45deg, #f8cdda, #fceabb, #cfd9df);
+    background-size: 400% 400%;
+    animation: gradientAnimation 30s ease-in-out infinite;
+    color: #333; /* 文字色を濃いグレーにしてみた。 */
 }
 
 h1 {
@@ -36,7 +43,7 @@ button {
     margin-bottom: 20px;
 }
 
-/* チャット用スタイル */
+/* チャット用のスタイルとして */
 #chat-box {
     border: 1px solid #ccc;
     padding: 10px;
@@ -70,34 +77,11 @@ button {
     cursor: pointer;
 }
 
-.btn {
-    display: inline-block;
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 4px;
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-.btn:hover {
-    background-color: #0056b3;
-}
-
+/* 知識一覧アイテム */
 .knowledge-item {
     padding: 8px;
     border-bottom: 1px solid #ccc;
     margin-bottom: 4px;
-}
-
-
-/* 淡くかわいいパステルグラデーション背景 */
-body {
-    background: linear-gradient(45deg, #f8cdda, #fceabb, #cfd9df);
-    background-size: 600% 600%;
-    animation: gradientAnimation 20s ease infinite;
-    color: #333; /* 文字色を濃いグレーにして読みやすく */
 }
 
 /* グラデーションアニメーション */
@@ -109,57 +93,86 @@ body {
         background-position: 100% 50%;
     }
     100% {
-        background-position: 0% 100%;
+        background-position: 0% 50%;
     }
 }
 
+/* =======================
+   ボタンのデザイン
+======================= */
+/* --- 共通ボタンデザイン --- */
+.btn {
+    padding: 12px 24px;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: bold;
+    display: inline-block;
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+    margin-bottom: 10px;
+}
 
-/* スマホ向けのレスポンシブ調整（画面幅600px以下） */
+/* --- Knowledge Registration ボタン --- */
+.Knowledge-btn {
+    background-color: #28A745; /* グリーン系 */
+    color: white;
+    border: 2px solid #28A745;
+}
+
+.Knowledge-btn:hover {
+    background-color: white;
+    color: #28A745;
+}
+
+/* --- IndexedDB ボタン --- */
+.IndexedDB-btn {
+    background-color: #007BFF; /* ブルー系 */
+    color: white;
+    border: 2px solid #007BFF;
+}
+
+.IndexedDB-btn:hover {
+    background-color: white;
+    color: #007BFF;
+}
+
+/* --- Return to Main ボタン --- */
+.return-btn {
+    background-color: #FF5733; /* オレンジ系 */
+    color: white;
+    border: 2px solid #FF5733;
+}
+
+.return-btn:hover {
+    background-color: white;
+    color: #FF5733;
+}
+
+/* =======================
+   レスポンシブ調整（スマホ向け）
+======================= */
 @media screen and (max-width: 600px) {
     body {
         padding: 10px;
+        background-size: 400% 400%;
+        animation: gradientAnimation 30s ease-in-out infinite;
+        color: #333;
     }
-
     #chat-box {
         height: 300px;
         font-size: 14px;
     }
-
     input#message {
         width: 90%;
         padding: 12px;
         font-size: 18px;
     }
-
     button {
         padding: 12px 25px;
         font-size: 18px;
     }
-
-    /* ボタンやリンクもタッチしやすいサイズにする */
+    /* ボタンやリンクもタッチしやすいサイズに */
     .btn, .option-btn {
         padding: 12px;
         font-size: 18px;
     }
-    /* 淡くかわいいパステルグラデーション背景 */
-    body {
-        background: linear-gradient(45deg, #f8cdda, #fceabb, #cfd9df);
-        background-size: 600% 600%;
-        animation: gradientAnimation 20s ease infinite;
-        color: #333; /* 文字色を濃いグレーにして読みやすく */
-    }
-
-    /* グラデーションアニメーション */
-    @keyframes gradientAnimation {
-        0% {
-            background-position: 0% 50%;
-        }
-        50% {
-            background-position: 100% 50%;
-        }
-        100% {
-            background-position: 0% 100%;
-        }
-    }
-
 }

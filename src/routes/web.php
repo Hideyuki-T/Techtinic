@@ -22,6 +22,11 @@ use App\Http\Models\Category;
 // ルートページ
 Route::get('/', fn() => view('welcome'));
 
+//メインページへのルート
+Route::get('/main', function(){
+    return view('mainpage.index');
+});
+
 // チャット関連ルートグループ（例: https://localhost:8080/chat）
 Route::prefix('chat')->group(function () {
     Route::get('/knowledge', [ChatController::class, 'knowledge']);

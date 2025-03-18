@@ -1,5 +1,5 @@
 const DB_NAME = "techtinic-db";
-const DB_VERSION = 1;
+const DB_VERSION = 2; // バージョンを2に更新
 let db;
 
 function openDatabase(callback) {
@@ -7,9 +7,14 @@ function openDatabase(callback) {
 
     request.onupgradeneeded = function (event) {
         let db = event.target.result;
+        // "knowledge" ストアがなければ作成
         if (!db.objectStoreNames.contains("knowledge")) {
             let store = db.createObjectStore("knowledge", { keyPath: "title" });
             store.createIndex("category", "category", { unique: false });
+        }
+        // "chatMessages" ストアがなければ必ず作成
+        if (!db.objectStoreNames.contains("chatMessages")) {
+            db.createObjectStore("chatMessages", { keyPath: "id", autoIncrement: true });
         }
     };
 

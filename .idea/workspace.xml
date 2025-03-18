@@ -5,14 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ba37bbb3-e67e-4eb2-9a3d-9167b982a711" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/compose.yml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/composer.json" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docker/app/dockerfile" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docker/app/php.ini" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/docker/nginx/dockerfile" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/compose.yml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -274,7 +268,7 @@
       <workItem from="1742178404362" duration="3843000" />
       <workItem from="1742193381064" duration="4018000" />
       <workItem from="1742286479827" duration="47000" />
-      <workItem from="1742286532610" duration="1012000" />
+      <workItem from="1742286532610" duration="2021000" />
     </task>
     <servers />
   </component>

@@ -1,3 +1,4 @@
+
 services:
   # PHP (Laravel) サービス
   app:
@@ -11,12 +12,12 @@ services:
       - ./.ssh:/root/.ssh
       - ./docs:/var/www/html/docs
     environment:
-      - DB_CONNECTION=pgsql
-      - DB_HOST=techtinic-db
-      - DB_PORT=5432
-      - DB_DATABASE=techtinic_db
-      - DB_USERNAME=hideyuki
-      - DB_PASSWORD=12345
+      - DB_CONNECTION=${DB_CONNECTION}
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
     depends_on:
       - db
     command: bash -c "mkdir -p /var/www/html/storage/logs /var/www/html/storage/framework/views && chown -R www-data:www-data /var/www/html/storage && php-fpm"
@@ -28,7 +29,7 @@ services:
       context: .
       dockerfile: ./docker/nginx/Dockerfile
     ports:
-      - '8080:443'
+      - '${WEB_PORT}:443'
     volumes:
       - ./src:/var/www/html
       - storage-data:/var/www/html/storage
@@ -36,23 +37,19 @@ services:
     depends_on:
       - app
 
+
   # PostgreSQL サービス
   db:
     container_name: techtinic-db
     image: postgres:13
     environment:
-      POSTGRES_USER: hideyuki
-      POSTGRES_PASSWORD: 12345
-      POSTGRES_DB: techtinic_db
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
     ports:
       - '5433:5432'
     volumes:
       - techtinic-db-volume:/var/lib/postgresql/data
-
-  # ﾛｸﾞｲﾝするなら：docker exec -it techtinic-db psql -U hideyuki -d techtinic_db
-
-  # Puppeteer ベースの Service Worker テスト用コンテナ
-  # テスト用のコンテナが必要なくなったので削除したよ。
 
 volumes:
   techtinic-db-volume:

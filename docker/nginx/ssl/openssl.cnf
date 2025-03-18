@@ -1,0 +1,33 @@
+[ req ]
+default_bits       = 2048
+default_md         = sha256
+prompt             = no
+distinguished_name = dn
+req_extensions     = v3_server
+
+[ dn ]
+C  = JP
+ST = Tokyo
+L  = Tokyo
+O  = Techtinic
+OU = Development
+CN = localhost
+
+[ alt_names ]
+IP.1 = 172.20.10.2
+IP.2 = 192.168.2.177
+DNS.1 = localhost
+DNS.2 = techtinic
+
+[ v3_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true
+
+[ v3_server ]
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints       = critical, CA:false
+keyUsage               = digitalSignature, keyEncipherment
+extendedKeyUsage       = serverAuth
+subjectAltName         = @alt_names

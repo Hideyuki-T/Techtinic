@@ -1,0 +1,70 @@
+/*名言に適用するCSS*/
+#quote-header {
+    text-align: center;
+    padding: 20px;
+    background-color: #f8fafc;
+    color: #374151;
+    font-size: 1.6em;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    border: 2px solid #cbd5e1;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(100, 116, 139, 0.15);
+    margin: 20px auto;
+    max-width: 800px;
+    line-height: 1.6;
+    position: relative;
+}
+/*ここまでが名言に適用するCSS*/
+
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    background-color: #f4f4f4;
+    padding: 50px;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.card {
+    width: 300px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: transform 0.3s ease-in-out;
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+
+.card h2 {
+    margin-bottom: 10px;
+    font-size: 22px;
+}
+
+.card p {
+    font-size: 16px;
+    color: #666;
+}
+
+.card a {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 20px;
+    background-color: #007BFF;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.card a:hover {
+    background-color: #0056b3;
+}

@@ -2,7 +2,7 @@
 services:
   # PHP (Laravel) サービス
   app:
-    container_name: techtinic-app
+    container_name: main-app
     build:
       context: .
       dockerfile: ./docker/php/Dockerfile
@@ -24,7 +24,7 @@ services:
 
   # nginx サービス（HTTPS対応）
   web:
-    container_name: techtinic-nginx
+    container_name: main-nginx
     build:
       context: .
       dockerfile: ./docker/nginx/Dockerfile
@@ -39,8 +39,9 @@ services:
 
 
   # PostgreSQL サービス
+  # 一気にﾛｸﾞｲﾝするなら"docker exec -it main-db psql -U hideyuki -d main_db"
   db:
-    container_name: techtinic-db
+    container_name: main-db
     image: postgres:13
     environment:
       POSTGRES_USER: ${DB_USERNAME}
@@ -49,8 +50,8 @@ services:
     ports:
       - '5433:5432'
     volumes:
-      - techtinic-db-volume:/var/lib/postgresql/data
+      - main-db-volume:/var/lib/postgresql/data
 
 volumes:
-  techtinic-db-volume:
+  main-db-volume:
   storage-data:

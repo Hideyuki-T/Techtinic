@@ -16,7 +16,12 @@ self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                return cache.addAll(urlsToCache);
+                // 各リソースごとにキャッシュ追加し、失敗した場合はエラーハンドリング
+                return Promise.all(urlsToCache.map(url => {
+                    return cache.add(url).catch(error => {
+                        console.error('キャッシュに失敗:', url, error);
+                    });
+                }));
             })
     );
 });
@@ -24,8 +29,6 @@ self.addEventListener('install', event => {
 self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
-            .then(response => {
-                return response || fetch(event.request);
-            })
+            .then(response => response || fetch(event.request))
     );
 });

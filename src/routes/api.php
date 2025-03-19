@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Chat\ChatMessageController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -16,4 +16,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+Route::prefix('chat')->group(function () {
+    Route::get('/messages', [ChatMessageController::class, 'index']);
+    Route::post('/messages', [ChatMessageController::class, 'store']);
+    Route::put('/messages/{id}', [ChatMessageController::class, 'update']);
+    Route::delete('/messages/{id}', [ChatMessageController::class, 'destroy']);
 });

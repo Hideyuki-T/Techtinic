@@ -29,6 +29,12 @@
         <p>お店作成中...</p>
         <a href="{{ url('/ec') }}">Visit EC Site</a>
     </div>
+    <div>
+    <div class="card">
+        <h2>参考になるよ！</h2>
+        <p>URL</p>
+        <a href="{{ url('/url') }}">Check URL</a>
+    </div>
 </div>
 
 <!-- アプリインストール用ボタン -->

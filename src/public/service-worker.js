@@ -4,6 +4,7 @@ const urlsToCache = [
     '/main',
     '/chat',
     '/ec',
+    '/game',
     '/css/mainPageStyles.css',
     '/quotes.json',
     '/images/icon_192x192.png',

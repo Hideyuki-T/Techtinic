@@ -37,7 +37,7 @@
     </div>
 
 <!-- アプリインストール用ボタン -->
-<button id="installBtn" style="display: none;">インストール！</button>
+<br><button id="installBtn" style="display: none;">インストール！</button>
 
 <script>
     // インストールプロンプト制御用

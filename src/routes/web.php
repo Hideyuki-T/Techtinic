@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Chat\ChatDataController;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Response;
+use App\Http\Controllers\Tetris\TetrisController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,6 +52,10 @@ Route::get('/chat-data-view', function () {
 Route::get('/game', function () {
     return view('game.index');
 });
+
+//テトリス用ページ
+Route::get('/tetris', [TetrisController::class, 'index']);
+Route::post('/tetris/score', [TetrisController::class, 'storeScore']);
 
 //-------------------------------------
 // ECサイトページ

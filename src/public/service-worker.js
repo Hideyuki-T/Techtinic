@@ -6,6 +6,7 @@ const urlsToCache = [
     '/chat/indexedDBUtil.js',
     '/ec',
     '/game',
+    '/game/tetris',
     '/css/mainPageStyles.css',
     '/quotes.json',
     '/images/icon_192x192.png',

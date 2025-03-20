@@ -2,20 +2,21 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>チャットデータの表示</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>IndexedDB Sync Example</title>
 </head>
 <body>
-<h1>チャットデータ</h1>
-<pre id="output"></pre>
+<h1>IndexedDB Sync Example</h1>
+<p>サーバーからデータを取得してIndexedDBに同期</p>
 
-<script>
-    fetch('/api/chat/data')
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('output').textContent = JSON.stringify(data, null, 2);
-        })
-        .catch(error => console.error('データ取得エラー:', error));
-</script>
+<!-- IndexedDBの内容を表示するコンテナ -->
+<div id="db-content">
+    <!-- データはここに表示されます -->
+</div>
+
+<!-- 静的ファイルとしてルートからJSを読み込み -->
+<script type="module" src="{{ url('/chat/indexedDBUtil.js') }}"></script>
+
+<a href="/main" class="btn return-btn">return to main</a>
 </body>
 </html>

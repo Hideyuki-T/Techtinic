@@ -2,6 +2,8 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Chat\ChatDataController;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Response;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,6 +28,17 @@ Route::get('/main', function () {
 // TechtinicChatのWebページ
 Route::get('/chat', function () {
     return view('chat.index');
+});
+
+Route::get('/chat/indexedDBUtil.js', function () {
+    $path = resource_path('views/chat/indexedDBUtil.js');
+    if (!File::exists($path)) {
+        abort(404);
+    }
+    $content = File::get($path);
+    return Response::make($content, 200, [
+        'Content-Type' => 'application/javascript'
+    ]);
 });
 
 // `chat-data-view` はWebページとして利用

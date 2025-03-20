@@ -1,3 +1,4 @@
+// public/js/tetris/game.js
 import { Piece } from './piece.js';
 import { Board } from './board.js';
 import { Renderer } from './renderer.js';
@@ -10,7 +11,9 @@ export class TetrisGame {
         this.currentPiece = this.generateRandomPiece();
         this.gameOver = false;
         this.interval = null;
+        this.gameSpeed = 500; // ミリ秒
     }
+
     generateRandomPiece() {
         const pieces = [
             { shape: [[1, 1, 1, 1]], color: 'cyan' },
@@ -23,10 +26,8 @@ export class TetrisGame {
         piece.y = -piece.shape.length;
         return piece;
     }
-    start() {
-        this.interval = setInterval(() => this.gameLoop(), 500);
-        this.setupControls();
-    }
+
+    // ゲームループ処理
     gameLoop() {
         if (!this.board.isValidPosition(this.currentPiece, 0, 1)) {
             this.board.addPiece(this.currentPiece);
@@ -35,6 +36,7 @@ export class TetrisGame {
                 this.gameOver = true;
                 clearInterval(this.interval);
                 alert('Game Over!');
+                return;
             }
         } else {
             this.currentPiece.y += 1;
@@ -42,40 +44,75 @@ export class TetrisGame {
         this.renderer.render();
         this.renderer.renderPiece(this.currentPiece);
     }
-    setupControls() {
-        document.addEventListener('keydown', (e) => {
-            if (this.gameOver) return;
-            switch (e.key) {
-                case 'ArrowLeft':
-                    if (this.board.isValidPosition(this.currentPiece, -1, 0)) {
-                        this.currentPiece.x -= 1;
-                    }
-                    break;
-                case 'ArrowRight':
-                    if (this.board.isValidPosition(this.currentPiece, 1, 0)) {
-                        this.currentPiece.x += 1;
-                    }
-                    break;
-                case 'ArrowDown':
-                    if (this.board.isValidPosition(this.currentPiece, 0, 1)) {
-                        this.currentPiece.y += 1;
-                    }
-                    break;
-                case 'ArrowUp':
-                    const clone = new Piece(
-                        this.currentPiece.shape.map(row => [...row]),
-                        this.currentPiece.color
-                    );
-                    clone.x = this.currentPiece.x;
-                    clone.y = this.currentPiece.y;
-                    clone.rotate();
-                    if (this.board.isValidPosition(clone, 0, 0)) {
-                        this.currentPiece.rotate();
-                    }
-                    break;
-            }
-            this.renderer.render();
-            this.renderer.renderPiece(this.currentPiece);
-        });
+
+    // ゲーム開始
+    start() {
+        if (!this.interval) {
+            this.gameOver = false;
+            this.interval = setInterval(() => this.gameLoop(), this.gameSpeed);
+        }
+    }
+
+    // ゲーム停止
+    stop() {
+        if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
+        }
+    }
+
+    // ゲームリセット（ボード・状態を初期化）
+    reset() {
+        this.stop();
+        this.board = new Board(10, 20);
+        this.renderer = new Renderer(this.canvas, this.board);
+        this.currentPiece = this.generateRandomPiece();
+        this.gameOver = false;
+        this.start();
+    }
+
+    // 左に移動
+    moveLeft() {
+        if (this.board.isValidPosition(this.currentPiece, -1, 0)) {
+            this.currentPiece.x -= 1;
+            this.render();
+        }
+    }
+
+    // 右に移動
+    moveRight() {
+        if (this.board.isValidPosition(this.currentPiece, 1, 0)) {
+            this.currentPiece.x += 1;
+            this.render();
+        }
+    }
+
+    // 1セル下に移動
+    moveDown() {
+        if (this.board.isValidPosition(this.currentPiece, 0, 1)) {
+            this.currentPiece.y += 1;
+            this.render();
+        }
+    }
+
+    // 回転
+    rotate() {
+        const clone = new Piece(
+            this.currentPiece.shape.map(row => [...row]),
+            this.currentPiece.color
+        );
+        clone.x = this.currentPiece.x;
+        clone.y = this.currentPiece.y;
+        clone.rotate();
+        if (this.board.isValidPosition(clone, 0, 0)) {
+            this.currentPiece.rotate();
+            this.render();
+        }
+    }
+
+    // 共通のレンダリング処理
+    render() {
+        this.renderer.render();
+        this.renderer.renderPiece(this.currentPiece);
     }
 }

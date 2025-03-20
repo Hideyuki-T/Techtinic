@@ -5,6 +5,7 @@
     <title>Laravel Tetris</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="{{ asset('css/tetrisPageStyles.css') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
 <h1>テトリス</h1>
@@ -38,6 +39,8 @@
     <input type="text" id="player_name" placeholder="プレイヤー名">
     <button id="submit-score">スコアを送信</button>
 </div>
+
+<a href="/game" class="btn">return to game</a>
 
 <!-- ESモジュールとして main.js を読み込む -->
 <script type="module" src="{{ asset('js/tetris/main.js') }}"></script>

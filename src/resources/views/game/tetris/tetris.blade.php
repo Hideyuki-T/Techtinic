@@ -4,19 +4,42 @@
     <meta charset="UTF-8">
     <title>Laravel Tetris</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <style>
-        body { font-family: Arial, sans-serif; }
-        #gameCanvas { background: #eee; display: block; margin: 20px auto; border: 2px solid #333; }
-    </style>
+    <link rel="stylesheet" href="{{ asset('css/tetrisPageStyles.css') }}">
 </head>
 <body>
 <h1>テトリス</h1>
+
+<!-- ゲーム制御ボタン -->
+<div class="controls">
+    <button id="start-btn">スタート</button>
+    <button id="stop-btn">ストップ</button>
+    <button id="reset-btn">リセット</button>
+</div>
+
+<!-- ゲーム描画用キャンバス -->
 <canvas id="gameCanvas"></canvas>
-<div id="score-area">
+
+<!-- 十字キーの方向ボタン -->
+<div class="controls">
+    <div class="dpad">
+        <div class="dpad-row">
+            <button id="up-btn">↑</button>
+        </div>
+        <div class="dpad-row">
+            <button id="left-btn">←</button>
+            <button id="down-btn">↓</button>
+            <button id="right-btn">→</button>
+        </div>
+    </div>
+</div>
+
+<!-- スコア送信エリア -->
+<div id="score-area" style="text-align: center; margin-top: 10px;">
     <input type="text" id="player_name" placeholder="プレイヤー名">
     <button id="submit-score">スコアを送信</button>
 </div>
-<!-- type="module" で ESモジュールとして読み込む -->
+
+<!-- ESモジュールとして main.js を読み込む -->
 <script type="module" src="{{ asset('js/tetris/main.js') }}"></script>
 </body>
 </html>

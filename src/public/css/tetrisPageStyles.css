@@ -1,0 +1,37 @@
+/* 共通スタイル */
+body {
+    font-family: Arial, sans-serif;
+}
+
+/* キャンバスのスタイル */
+#gameCanvas {
+    background: #eee;
+    display: block;
+    margin: 20px auto;
+    border: 2px solid #333;
+}
+
+/* ゲーム制御ボタンのスタイル */
+.controls {
+    text-align: center;
+    margin-bottom: 10px;
+}
+.controls button {
+    margin: 0 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+/* 十字キーのスタイル */
+.dpad {
+    display: inline-block;
+    text-align: center;
+}
+.dpad-row {
+    margin: 2px;
+}
+.dpad button {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+}

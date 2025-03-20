@@ -1,16 +1,20 @@
 const CACHE_NAME = 'CSTE-cache-v1';
 const urlsToCache = [
-    '/',
-    '/main',
-    '/chat',
-    '/chat/indexedDBUtil.js',
-    '/ec',
-    '/game',
-    '/game/tetris',
-    '/css/mainPageStyles.css',
-    '/quotes.json',
-    '/images/icon_192x192.png',
-    '/images/icon_512x512.png'
+    '/',                        // トップページ
+    '/main',                    // メインページ
+    '/chat',                    // チャットページ
+    '/chat/indexedDBUtil.js',   // チャット用JS
+    '/chat-data-view',          // チャットデータ表示ページ
+    '/game',                    // ゲームトップページ
+    '/tetris',                  // テトリスページ
+    '/ec',                      // ECサイトページ
+    '/url',                     // お気に入り用ページ
+    '/css/mainPageStyles.css',  // CSS
+    '/quotes.json',             // 名言リストJSON
+    '/images/icon_192x192.png', // アイコン
+    '/images/icon_512x512.png', // アイコン
+    '/api/chat/messages',       // API：チャットメッセージ取得（GET）
+    '/api/chat/data'            // API：チャットデータ取得（GET）
 ];
 
 self.addEventListener('install', event => {

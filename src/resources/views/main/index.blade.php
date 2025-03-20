@@ -35,10 +35,9 @@
         <p>URL</p>
         <a href="{{ url('/url') }}">Check URL</a>
     </div>
-</div>
 
 <!-- アプリインストール用ボタン -->
-<button id="installBtn" style="display: none;">インストール！</button>
+<br><button id="installBtn" style="display: none;">インストール！</button>
 
 <script>
     // インストールプロンプト制御用
@@ -97,7 +96,7 @@
         document.getElementById('quote-header').textContent = quotes[randomIndex];
     }
 
-    // 名言を取得して、5秒ごとに更新
+    // 名言を取得して、8秒ごとに更新
     fetchQuotes().then(quotes => {
         // 初回表示
         displayRandomQuote(quotes);
@@ -107,5 +106,7 @@
         }, 8000);
     });
 </script>
+</div>
+</div>
 </body>
 </html>

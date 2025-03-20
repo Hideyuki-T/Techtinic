@@ -1,62 +1,70 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\chat\ChatDataController;
+use App\Http\Controllers\Chat\ChatDataController;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Response;
+use App\Http\Controllers\Tetris\TetrisController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
+| ここではWebアプリケーションのページ表示用ルートを登録
 |
 */
-//https://localhost:8080/chat-data  200 OK
-//https://localhost:8080/chat-data-view  200 OK
-
-
 
 Route::get('/', function () {
     return view('welcome');
 });
 
 //-------------------------------------
-
-//全ての始まりページ
+// メインページ
 Route::get('/main', function () {
     return view('main.index');
 });
 
 //-------------------------------------
-
-//TechtinicChat用のページ
+// TechtinicChatのWebページ
 Route::get('/chat', function () {
     return view('chat.index');
 });
 
-Route::get('/chat-data', [ChatDataController::class, 'index']);
-Route::get('/chat-data-view', function(){
+Route::get('/chat/indexedDBUtil.js', function () {
+    $path = resource_path('views/chat/indexedDBUtil.js');
+    if (!File::exists($path)) {
+        abort(404);
+    }
+    $content = File::get($path);
+    return Response::make($content, 200, [
+        'Content-Type' => 'application/javascript'
+    ]);
+});
+
+// `chat-data-view` はWebページとして利用
+Route::get('/chat-data-view', function () {
     return view('chat.data');
 });
-//-------------------------------------
 
-//Game用のページ
+//-------------------------------------
+// Gameページ
 Route::get('/game', function () {
     return view('game.index');
 });
 
-//-------------------------------------
+//テトリス用ページ
+Route::get('/tetris', [TetrisController::class, 'index']);
+Route::post('/tetris/score', [TetrisController::class, 'storeScore']);
 
-//ECサイト用のページ
+//-------------------------------------
+// ECサイトページ
 Route::get('/ec', function () {
     return view('ec.index');
 });
 
-
-//お気に入り用
+//-------------------------------------
+// お気に入り用ページ
 Route::get('/url', function () {
     return view('url.index');
 });
-

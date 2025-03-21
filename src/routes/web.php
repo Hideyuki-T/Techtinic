@@ -69,3 +69,6 @@ Route::get('/ec', function () {
 Route::get('/url', function () {
     return view('url.index');
 });
+Route::get('/url/register', function () {
+    return view('url.register');
+});

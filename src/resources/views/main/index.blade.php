@@ -7,8 +7,12 @@
     <link rel="stylesheet" href="{{ asset('css/mainPageStyles.css') }}">
     <!-- PWA用のmanifestファイルの読み込み -->
     <link rel="manifest" href="/manifest.json">
-    <!-- テーマカラー設定 -->
-    <meta name="theme-color" content="#317EFB">
+
+    <link rel="apple-touch-icon" href="/icons/apple-icon-180x180.png">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
 </head>
 <body>
 <h1>Welcome to My Projects</h1>

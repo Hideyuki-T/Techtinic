@@ -15,6 +15,12 @@
     </style>
 </head>
 <body>
+<h1>IndexedDB Contents</h1>
+<div id="db-content"></div>
+<script src="chat-knowledge-db.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", displayDBContents);
+</script>
 <h1>データ挿入</h1>
 <p>カテゴリー、タイトル、本文、タグ の順でデータを登録します</p>
 

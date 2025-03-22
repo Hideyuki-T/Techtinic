@@ -64,4 +64,34 @@
             console.error("Failed to open database:", event.target.error);
         };
     };
+
+    // グローバル関数としてデータベース内の各オブジェクトストアの内容を表示する関数を公開
+    window.displayDBContents = function() {
+        window.getChatKnowledgeDB(function(db) {
+            const container = document.getElementById("db-content");
+            container.innerHTML = "";
+            const stores = [
+                "chat_knowledge",
+                "chat_tags",
+                "chat_categories",
+                "chat_knowledge_tag",
+                "chat_knowledge_category"
+            ];
+            stores.forEach(storeName => {
+                const transaction = db.transaction(storeName, "readonly");
+                const store = transaction.objectStore(storeName);
+                const request = store.getAll();
+                request.onsuccess = function(e) {
+                    const data = e.target.result;
+                    const div = document.createElement("div");
+                    div.innerHTML = `<h2>${storeName}</h2><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    container.appendChild(div);
+                };
+                request.onerror = function(e) {
+                    console.error(`Error reading store ${storeName}:`, e.target.error);
+                };
+            });
+        });
+    };
+
 })();

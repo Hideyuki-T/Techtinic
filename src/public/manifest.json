@@ -4,9 +4,14 @@
     "start_url": "/main",
     "display": "standalone",
     "background_color": "#ffffff",
-    "theme_color": "#317EFB",
+    "theme_color": "#73f5f3",
     "scope": "/",
     "icons": [
+        {
+            "src": "/icons/apple-icon-180x180.png",
+            "sizes": "180x180",
+            "type": "icon/png"
+        },
         {
             "src": "/images/icon_192x192.png",
             "sizes": "192x192",

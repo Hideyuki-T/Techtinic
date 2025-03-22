@@ -1,10 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Chat\ChatDataController;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Response;
+use App\Http\Controllers\Main\MainController;
 use App\Http\Controllers\Tetris\TetrisController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -12,6 +13,7 @@ use App\Http\Controllers\Tetris\TetrisController;
 |--------------------------------------------------------------------------
 |
 | ここではWebアプリケーションのページ表示用ルートを登録
+|　
 |
 */
 
@@ -21,9 +23,7 @@ Route::get('/', function () {
 
 //-------------------------------------
 // メインページ
-Route::get('/main', function () {
-    return view('main.index');
-});
+Route::get('/main', [MainController::class, 'index']);
 
 //-------------------------------------
 // TechtinicChatのWebページ
@@ -67,4 +67,7 @@ Route::get('/ec', function () {
 // お気に入り用ページ
 Route::get('/url', function () {
     return view('url.index');
+});
+Route::get('/url/register', function () {
+    return view('url.register');
 });

@@ -33,7 +33,7 @@ services:
       - ../src/storage:/var/www/html/storage
       - ../docker/nginx/ssl:/etc/nginx/ssl
     env_file:
-      - .env
+      - ../.env
     depends_on:
       - app
 

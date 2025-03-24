@@ -29,8 +29,8 @@ RUN docker-php-ext-install pdo_pgsql bcmath zip && \
 # Composer のインストール（マルチステージビルドの場合は Composer イメージからコピー）
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# PHP設定ファイルのコピー（必要に応じてカスタマイズ）
-COPY ./docker/php/php.ini /usr/local/etc/php/php.ini
+# PHP設定ファイルのコピー
+COPY php.ini /usr/local/etc/php/php.ini
 
 # git のグローバル設定（オプション）
 RUN git config --global user.name "YourGitHubUserName" \

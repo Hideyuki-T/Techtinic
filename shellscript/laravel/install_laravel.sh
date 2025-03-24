@@ -3,7 +3,7 @@
 # Laravelのインストール
 LARAVEL_VERSION="10.*"
 
-APP_CONTAINER="techtinic-app"
+APP_CONTAINER="main-app"
 INSTALL_DIR="/var/www/html"
 
 echo "-------------------------"

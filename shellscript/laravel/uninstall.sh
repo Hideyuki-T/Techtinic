@@ -1,6 +1,6 @@
 #!/bin/bash
 
-APP_CONTAINER="techtinic-app"
+APP_CONTAINER="main-app"
 INSTALL_DIR="/var/www/html"
 
 echo "-------------------------"

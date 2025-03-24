@@ -1,66 +1,70 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ChatController;
-use App\Http\Controllers\KnowledgeController;
-use App\Http\Models\Tag;
-Use App\Http\Models\Knowledge;
-use App\Http\Models\User;
-use App\Http\Models\Category;
+use App\Http\Controllers\Chat\ChatDataController;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Response;
+use App\Http\Controllers\Tetris\TetrisController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 |
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
+| ここではWebアプリケーションのページ表示用ルートを登録
 |
 */
 
-// ルートページ
-Route::get('/', fn() => view('welcome'));
-
-//メインページへのルート
-Route::get('/main', function(){
-    return view('mainpage.index');
+Route::get('/', function () {
+    return view('welcome');
 });
 
-// チャット関連ルートグループ（例: https://localhost:8080/chat）
-Route::prefix('chat')->group(function () {
-    Route::get('/knowledge', [ChatController::class, 'knowledge']);
-    // チャット画面の表示（resources/views/techtinic/chat.blade.php）
-    Route::get('/', fn() => view('techtinic.chat'));
-    // チャットの API エンドポイント
-    Route::post('/', [ChatController::class, 'chat']);
+//-------------------------------------
+// メインページ
+Route::get('/main', function () {
+    return view('main.index');
 });
 
-// 知識登録画面および処理（例: http://localhost:8080/teach）
-Route::get('/teach', [KnowledgeController::class, 'create']);
-Route::post('/teach', [KnowledgeController::class, 'store']);
-
-// 知識一覧ページ（例: http://localhost:8080/knowledge）
-Route::get('/knowledge', fn() => view('knowledge.knowledge'));
-
-
-
-//以下データベース内確認用URL
-Route::get('/tagData', function () {
-    // YourModel は対象のモデル名に置き換えてください
-    $data = \App\Models\Tag::all();
-    return response()->json($data);
-});
-Route::get('/knowledgeData', function () {
-    $data = \App\Models\Knowledge::all();
-    return response()->json($data);
-});
-Route::get('/userData', function () {
-    $data = \App\Models\User::all();
-    return response()->json($data);
-});
-Route::get('/categoryData', function () {
-    $data = \App\Models\Category::all();
-    return response()->json($data);
+//-------------------------------------
+// TechtinicChatのWebページ
+Route::get('/chat', function () {
+    return view('chat.index');
 });
 
+Route::get('/chat/indexedDBUtil.js', function () {
+    $path = resource_path('views/chat/indexedDBUtil.js');
+    if (!File::exists($path)) {
+        abort(404);
+    }
+    $content = File::get($path);
+    return Response::make($content, 200, [
+        'Content-Type' => 'application/javascript'
+    ]);
+});
+
+// `chat-data-view` はWebページとして利用
+Route::get('/chat-data-view', function () {
+    return view('chat.data');
+});
+
+//-------------------------------------
+// Gameページ
+Route::get('/game', function () {
+    return view('game.index');
+});
+
+//テトリス用ページ
+Route::get('/tetris', [TetrisController::class, 'index']);
+Route::post('/tetris/score', [TetrisController::class, 'storeScore']);
+
+//-------------------------------------
+// ECサイトページ
+Route::get('/ec', function () {
+    return view('ec.index');
+});
+
+//-------------------------------------
+// お気に入り用ページ
+Route::get('/url', function () {
+    return view('url.index');
+});

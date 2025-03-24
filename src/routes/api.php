@@ -2,21 +2,17 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\ChatController;
-use App\Models\Knowledge;
-use App\Services\SystemStatusService;
-use App\Http\Controllers\KnowledgeController;
-use App\Models\Tag;
+use App\Http\Controllers\Chat\ChatMessageController;
+use App\Http\Controllers\Chat\ChatDataController;
 
 /*
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
 |
-| ここでは、API ルートを定義します。これらのルートは自動的に "/api"
-| プレフィックスが付与されます。
-| なので、たとえば、"/sync" と定義すると、
-| 外部からは "http://{ホスト}:ポート/api/sync" でアクセス可能。
+| ここではアプリケーションの API ルートを登録。
+| これらのルートは RouteServiceProvider によって "api" ミドルウェアグループに
+| 割り当てられる
 |
 */
 
@@ -24,38 +20,13 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// チャットの API エンドポイント
-Route::post('/chat', [ChatController::class, 'chat']);
+// Chat関連のAPIルート
+Route::prefix('chat')->group(function () {
+    Route::get('/messages', [ChatMessageController::class, 'index']);
+    Route::post('/messages', [ChatMessageController::class, 'store']);
+    Route::put('/messages/{id}', [ChatMessageController::class, 'update']);
+    Route::delete('/messages/{id}', [ChatMessageController::class, 'destroy']);
 
-// データベースから知識データを取得するルート
-Route::get('/sync', function () {
-    // Knowledge のカテゴリーやタグも同時にロードする場合：
-    $knowledgeData = Knowledge::with(['categories', 'tags'])->get();
-    return response()->json(['knowledge' => $knowledgeData]);
-});
-
-// 知識データ削除用のエンドポイントを追加
-Route::delete('/knowledge/{id}', [KnowledgeController::class, 'destroy']);
-// 知識データ更新用のエンドポイントを追加
-Route::put('/knowledge/{id}', [KnowledgeController::class, 'update']);
-
-// タグの一覧を取得するエンドポイント
-Route::get('/tags', function () {
-    return response()->json(Tag::all());
-});
-//タグ削除用のエンドポイント
-Route::delete('/tags/{id}', [KnowledgeController::class, 'destroyTag']);
-
-// API で環境変数を取得するエンドポイント
-Route::get('/config', function () {
-    return response()->json([
-        'sync_server_ip' => env('SYNC_SERVER_IP', 'localhost'),
-    ]);
-});
-
-//個のエンドポイントは SystemStatusService::isOnline() の結果を JSON で返す。
-Route::get('/system/status', function () {
-    return response()->json([
-        'online' => SystemStatusService::isOnline(),
-    ]);
+    // Chatデータ取得API
+    Route::get('/data', [ChatDataController::class, 'index']);
 });

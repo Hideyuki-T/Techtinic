@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Chat;
 
-use Illuminate\Http\Request;
-use App\Models\Knowledge;
 use App\Models\Category;
+use App\Models\Knowledge;
 use App\Models\Tag;
 use App\Services\SystemStatusService;
 use Exception;
+use Illuminate\Http\Request;
 
 class KnowledgeController extends Controller
 {

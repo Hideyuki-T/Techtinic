@@ -1,0 +1,66 @@
+/* 共通スタイル */
+body {
+    font-family: Arial, sans-serif;
+}
+
+/* キャンバスのスタイル */
+#gameCanvas {
+    background: #eee;
+    display: block;
+    margin: 20px auto;
+    border: 2px solid #333;
+}
+
+/* ゲーム制御ボタンのスタイル */
+.controls {
+    text-align: center;
+    margin-bottom: 10px;
+}
+.controls button {
+    margin: 0 5px;
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+/* 十字キーのスタイル */
+.dpad {
+    display: inline-block;
+    text-align: center;
+}
+.dpad-row {
+    margin: 2px;
+}
+.dpad button {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+}
+
+/* スマホ向けレスポンシブ調整 */
+@media screen and (max-width: 600px) {
+    /* 全体の余白を縮小 */
+    body {
+        padding: 5px;
+    }
+
+    /* キャンバスサイズを調整 */
+    #gameCanvas {
+        width: 100%;
+        max-width: 300px; /* 必要に応じて調整 */
+        height: auto;
+        border-width: 1px;
+    }
+
+    /* ゲーム制御ボタンのサイズ調整 */
+    .controls button {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+
+    /* 十字キーのサイズ調整 */
+    .dpad button {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+    }
+}

@@ -1,20 +1,26 @@
-// service-worker.js
-import { openDB } from '/js/idb.min.js';
+
+importScripts('/js/idb.min.js');
 
 const CACHE_NAME = 'techtinic-cache-v1';
 const urlsToCache = [
-    '/',
-    '/chat',
-    '/teach',
-    '/knowledge',
-    '/css/style.css',
-    '/manifest.json',
-    '/js/sync.js',
-    '/js/idb.min.js',
-    '/images/icons/icon-192x192.png',
-    '/images/icons/icon-512x512.png',
-    '/favicon.ico',
-    '/offline.html',
+    '/',                        // トップページ
+    '/main',                    // メインページ
+    '/chat',                    // チャットページ
+    '/chat/indexedDBUtil.js',   // チャット用JS
+    '/game',                    // ゲームトップページ
+    '/ec',                      // ECサイトページ
+    '/url',                     // お気に入り用ページ
+    '/css/mainPageStyles.css',  // CSS
+    '/quotes.json',             // 名言リストJSON
+    '/images/icon_192x192.png', // アイコン
+    '/images/icon_512x512.png', // アイコン
+    '/tetris',                  // テトリスページ
+    '/js/tetris/main.js',
+    '/js/tetris/score.js',
+    '/js/tetris/piece.js',
+    '/js/tetris/game.js',
+    '/js/tetris/renderer.js',
+    '/js/tetris/board.js',
 ];
 
 // タイムアウト付き fetch 関数（デフォルトは5000ms）
